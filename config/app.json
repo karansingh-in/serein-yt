@@ -1,0 +1,45 @@
+{
+  "appName": "Serein",
+  "topics": [
+    {
+      "id": "linear-algebra",
+      "label": "Linear algebra",
+      "query": "linear algebra lecture",
+      "include": ["linear algebra", "matrix", "eigenvalue", "vector space"],
+      "exclude": ["shorts", "reaction"],
+      "categoryId": "27",
+      "duration": "any",
+      "order": "relevance",
+      "language": "en"
+    },
+    {
+      "id": "organic-chemistry",
+      "label": "Organic chemistry",
+      "query": "organic chemistry lecture",
+      "include": ["organic chemistry", "reaction mechanism", "alkene", "carbonyl"],
+      "exclude": ["shorts", "reaction video"],
+      "categoryId": "27",
+      "duration": "any",
+      "order": "relevance",
+      "language": "en"
+    },
+    {
+      "id": "statistics",
+      "label": "Statistics",
+      "query": "statistics lecture",
+      "include": ["statistics", "probability", "distribution", "hypothesis"],
+      "exclude": ["shorts", "reaction"],
+      "categoryId": "27",
+      "duration": "any",
+      "order": "relevance",
+      "language": "en"
+    }
+  ],
+  "limits": {
+    "perTopic": 18,
+    "homeTotal": 36,
+    "minDurationSec": 180,
+    "cacheHours": 6,
+    "manualRefreshMinutes": 60
+  }
+}
