@@ -74,11 +74,38 @@ Two UI issues found and fixed while checking:
 
 `docs/screens/live/topics-*.png` are the real feed; `docs/screens/` stays on fixtures.
 
+## Deployed, and the 500 it threw (2026-11-20)
+
+Live at `serein-yt.vercel.app`. The first deploy showed "Couldn't load your topics" on every
+page, because `/api/videos` returned 500 `FUNCTION_INVOCATION_FAILED` for **every** request,
+including one that should have answered 400 without touching the network. That means the
+module crashed while loading, not while running.
+
+Cause: `package.json` has `"type": "module"`, so Vercel runs the function as ESM, and the
+handler imported two JSON files and one extensionless module:
+
+- `import appConfig from '../config/app.json'` → ESM needs `with { type: 'json' }`
+- `import { … } from './filters'` → ESM needs the `.js` extension
+
+Reproduced exactly by transpiling the handler to ESM and importing it in plain Node:
+`ERR_IMPORT_ATTRIBUTE_MISSING`, then `ERR_MODULE_NOT_FOUND`. Local `vite preview` never
+showed it because Vite bundles the imports away.
+
+Fixed by adding the import attributes and the `.js` specifier, and by moving the two test
+files out of `api/` (Vercel would otherwise deploy them as public functions). Verified the
+same way: the handler now imports and answers in plain Node ESM.
+
+**Quota is the other failure mode.** `search.list` costs 100 units, so the free tier allows
+about 100 searches a day; a full home load is six searches. Testing today ran it dry, and a
+dried-up key answers `429`, which the handler turns into a per-topic 502. That is not fatal:
+topics that loaded still render, with "Couldn't refresh. Showing what was saved at …".
+Quota resets at midnight Pacific.
+
 ## Next
-1. Owner imports `github.com/karansingh-in/serein-yt` into Vercel, adds `YT_KEY`, deploys
-   (steps in `docs/SETUP.md` §3), then checks `/api/videos?topic=physics` returns
-   `"source":"api"`.
-2. Owner installs it on the iPad and reports what actually happens.
+1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
+   reports what actually happens.
+2. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
+   it resets at midnight Pacific.
 
 ## Blockers
 - None.

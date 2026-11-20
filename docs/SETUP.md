@@ -66,6 +66,15 @@ are not in the repo, so a fresh clone has no key until you add one.
 
 Any static host works for the files, but the function is written for Vercel's Node runtime.
 
+### If it misbehaves
+
+| What you see | What it means |
+|---|---|
+| Page says "Couldn't load your topics", `/api/videos` returns **500** `FUNCTION_INVOCATION_FAILED` | The function failed to load at all — not a key problem. Check the deploy log for the module error. |
+| `/api/videos` returns **502** `upstream_failed` | The key was rejected or the daily search quota is spent. Quota resets at midnight Pacific. |
+| `"source":"fixtures"` | `YT_KEY` is not set for that environment, or the deploy predates it. |
+| Page loads but thumbnails are blank | NextDNS is blocking `ytimg.com`; allowlist it. |
+
 ## 4. NextDNS
 
 Create a profile for the iPad and apply it to the device.
