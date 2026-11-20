@@ -1,0 +1,105 @@
+{
+  "note": "Sample data only. Shown when no YT_KEY is set. Titles, channels and thumbnails are invented.",
+  "items": [
+    {
+      "id": "fixture-01",
+      "topicIds": ["linear-algebra"],
+      "title": "Eigenvectors and eigenvalues, drawn on a grid",
+      "channel": "Example Academy",
+      "durationSec": 1440,
+      "publishedAt": "2026-11-17T09:00:00Z",
+      "description": "A geometric reading of what an eigenvector actually is: the directions a transformation leaves alone, and the numbers that say how far it stretches them. Worked on a plane first, then in three dimensions.",
+      "thumbnail": "/fixtures/thumb-1.png"
+    },
+    {
+      "id": "fixture-02",
+      "topicIds": ["linear-algebra"],
+      "title": "Matrix multiplication as the composition of two motions",
+      "channel": "Lecture Notes",
+      "durationSec": 2292,
+      "publishedAt": "2026-11-15T14:30:00Z",
+      "description": "Why the row-by-column rule is the only rule that makes composition work, and what the columns of a matrix are telling you about where the basis vectors land.",
+      "thumbnail": "/fixtures/thumb-2.png"
+    },
+    {
+      "id": "fixture-03",
+      "topicIds": ["linear-algebra"],
+      "title": "The four fundamental subspaces, and why they fit together",
+      "channel": "Example Academy",
+      "durationSec": 1180,
+      "publishedAt": "2026-11-13T08:15:00Z",
+      "description": "Column space, null space, row space and left null space, with the dimension bookkeeping that links them. Includes rank-nullity and a short argument for why the pairs are orthogonal.",
+      "thumbnail": "/fixtures/thumb-3.png"
+    },
+    {
+      "id": "fixture-04",
+      "topicIds": ["linear-algebra"],
+      "title": "Singular value decomposition from first principles",
+      "channel": "Open Lecture Archive",
+      "durationSec": 3130,
+      "publishedAt": "2026-11-11T17:45:00Z",
+      "description": "Every matrix is a rotation, a stretch, and another rotation. Building the SVD out of that sentence, then using it to compress an image.",
+      "thumbnail": "/fixtures/thumb-4.png"
+    },
+    {
+      "id": "fixture-05",
+      "topicIds": ["organic-chemistry"],
+      "title": "SN1 and SN2: the two substitution pathways side by side",
+      "channel": "Example Academy",
+      "durationSec": 2292,
+      "publishedAt": "2026-11-18T10:00:00Z",
+      "description": "Rate laws, stereochemistry and the solvent effects that decide which mechanism wins. Drawn on a chalkboard, step by step, with the transition states shown.",
+      "thumbnail": "/fixtures/thumb-5.png"
+    },
+    {
+      "id": "fixture-06",
+      "topicIds": ["organic-chemistry"],
+      "title": "Carbonyl chemistry: nucleophilic addition and its reversals",
+      "channel": "Lecture Notes",
+      "durationSec": 2760,
+      "publishedAt": "2026-11-16T11:20:00Z",
+      "description": "Why the carbonyl carbon is electrophilic, how the tetrahedral intermediate forms, and the conditions that send the reaction back the other way.",
+      "thumbnail": "/fixtures/thumb-6.png"
+    },
+    {
+      "id": "fixture-07",
+      "topicIds": ["organic-chemistry"],
+      "title": "Aromaticity and Hückel's rule, without the hand-waving",
+      "channel": "Open Lecture Archive",
+      "durationSec": 1980,
+      "publishedAt": "2026-11-12T16:10:00Z",
+      "description": "Counting pi electrons properly, and why the 4n+2 rule falls out of the orbital picture rather than being a rule to memorise.",
+      "thumbnail": "/fixtures/thumb-1.png"
+    },
+    {
+      "id": "fixture-08",
+      "topicIds": ["statistics"],
+      "title": "Hypothesis testing and what a p-value is not",
+      "channel": "Example Academy",
+      "durationSec": 1125,
+      "publishedAt": "2026-11-19T07:30:00Z",
+      "description": "The logic of the null model, the sampling distribution, and the three claims a p-value cannot support. Ends with a small simulation you can run yourself.",
+      "thumbnail": "/fixtures/thumb-2.png"
+    },
+    {
+      "id": "fixture-09",
+      "topicIds": ["statistics"],
+      "title": "Maximum likelihood, explained with one curve",
+      "channel": "Lecture Notes",
+      "durationSec": 1265,
+      "publishedAt": "2026-11-14T13:00:00Z",
+      "description": "Start with a likelihood, take a log, set the derivative to zero. The whole method on a single parameter, then a note on why the log matters.",
+      "thumbnail": "/fixtures/thumb-3.png"
+    },
+    {
+      "id": "fixture-10",
+      "topicIds": ["statistics"],
+      "title": "The central limit theorem, demonstrated rather than asserted",
+      "channel": "Open Lecture Archive",
+      "durationSec": 1878,
+      "publishedAt": "2026-11-10T09:45:00Z",
+      "description": "Repeated sampling from a deliberately lopsided distribution, with the running histogram converging on a bell. Discussion of the sample sizes where it still misleads.",
+      "thumbnail": "/fixtures/thumb-4.png"
+    }
+  ]
+}
