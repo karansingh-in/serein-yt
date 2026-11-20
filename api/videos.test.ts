@@ -18,7 +18,7 @@ function fakeResponse() {
 
 const request = (query: Record<string, string>) => ({ method: 'GET', query });
 
-const snippet = (title: string, channel = 'Example Academy') => ({
+const snippet = (title: string, channel = 'Physics Wallah') => ({
   title,
   channelTitle: channel,
   publishedAt: '2026-11-18T00:00:00Z',
@@ -29,10 +29,11 @@ const snippet = (title: string, channel = 'Example Academy') => ({
 
 const search = {
   items: [
-    { id: { videoId: 'keep' }, snippet: snippet('Linear algebra lecture one') },
-    { id: { videoId: 'short' }, snippet: snippet('Linear algebra in 45 seconds') },
+    { id: { videoId: 'keep' }, snippet: snippet("Physics lecture one: Newton's laws") },
+    { id: { videoId: 'short' }, snippet: snippet('Physics in 45 seconds') },
     { id: { videoId: 'offtopic' }, snippet: snippet('Cooking pasta at home') },
-    { id: { videoId: 'unembeddable' }, snippet: snippet('Linear algebra matrix tricks') },
+    { id: { videoId: 'unembeddable' }, snippet: snippet('Physics matrix tricks') },
+    { id: { videoId: 'wrongchannel' }, snippet: snippet('Physics lecture from elsewhere', 'Some Other Channel') },
   ],
 };
 
@@ -42,7 +43,7 @@ const details = {
       id: 'keep',
       contentDetails: { duration: 'PT20M' },
       status: { embeddable: true, uploadStatus: 'processed' },
-      snippet: { title: 'Linear algebra lecture one', description: 'The full description, which is much longer than the truncated one.' },
+      snippet: { title: "Physics lecture one: Newton's laws", description: 'The full description, which is much longer than the truncated one.' },
     },
     {
       id: 'short',
@@ -82,7 +83,7 @@ describe('videos handler', () => {
     );
 
     const res = fakeResponse();
-    await handler(request({ topic: 'linear-algebra' }) as never, res as never);
+    await handler(request({ topic: 'physics' }) as never, res as never);
 
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
@@ -103,7 +104,7 @@ describe('videos handler', () => {
     delete process.env.YT_KEY;
 
     const res = fakeResponse();
-    await handler(request({ topic: 'statistics' }) as never, res as never);
+    await handler(request({ topic: 'botany' }) as never, res as never);
 
     const body = JSON.parse(res.body);
     expect(body.source).toBe('fixtures');
@@ -127,11 +128,11 @@ describe('videos handler', () => {
     );
 
     const cached = fakeResponse();
-    await handler(request({ topic: 'linear-algebra' }) as never, cached as never);
+    await handler(request({ topic: 'physics' }) as never, cached as never);
     expect(cached.headers['cache-control']).toContain('s-maxage');
 
     const refreshed = fakeResponse();
-    await handler(request({ topic: 'linear-algebra', refresh: '1' }) as never, refreshed as never);
+    await handler(request({ topic: 'physics', refresh: '1' }) as never, refreshed as never);
     expect(refreshed.headers['cache-control']).toBe('no-store');
   });
 });

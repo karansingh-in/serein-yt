@@ -41,7 +41,8 @@ export function decodeEntities(text: string): string {
   });
 }
 
-/** PT1H2M3S -> 3723. Anything unparseable is 0, which the duration filter drops. */export function parseISODuration(iso: string): number {
+/** PT1H2M3S -> 3723. Anything unparseable is 0, which the duration filter drops. */
+export function parseISODuration(iso: string): number {
   const m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(iso);
   if (!m) return 0;
   const [, d, h, mi, s] = m;
@@ -67,10 +68,17 @@ export function matchesRules(
   include: string[] = [],
   exclude: string[] = [],
 ): boolean {
-  const text = `${video.title}\n${video.channel}`;
-  if (exclude.some((phrase) => hasPhrase(text, phrase))) return false;
+  if (exclude.some((phrase) => hasPhrase(`${video.title}\n${video.channel}`, phrase))) return false;
+  // Include is about the subject, so it only looks at the title: a channel called
+  // "Physics Wallah" must not make every one of its videos count as physics.
   if (include.length === 0) return true;
-  return include.some((phrase) => hasPhrase(text, phrase));
+  return include.some((phrase) => hasPhrase(video.title, phrase));
+}
+
+/** A channel is allowed when its name contains one of the entries as a whole word. */
+export function channelAllowed(channel: string, allow: string[] = []): boolean {
+  if (allow.length === 0) return true;
+  return allow.some((entry) => hasPhrase(channel, entry));
 }
 
 export function dedupe<T extends { id: string }>(items: T[]): T[] {

@@ -3,7 +3,7 @@
 Update at the end of every session. Loaded automatically each session.
 
 ## Current phase
-Phases 1–3 built. First live run done with a real key (2026-11-20).
+Phases 1–3 built. Live data verified. Topics scoped to NEET/JEE study channels (2026-11-20).
 
 ## Done
 - **Phase 1 — shell and look.** Vite + vanilla TS, one stylesheet with the SPEC §5.1 tokens,
@@ -17,10 +17,10 @@ Phases 1–3 built. First live run done with a real key (2026-11-20).
 - **Phase 3 — install and ship.** Manifest, 192/512/maskable icons, apple-touch icon, apple
   meta tags, `vercel.json` (SPA rewrite, CSP, referrer policy, nosniff, permissions policy,
   asset caching), `docs/SETUP.md`.
-- Checks: `npm run typecheck` clean, `npm test` 15/15, `npm run lint:design` passes
+- Checks: `npm run typecheck` clean, `npm test` 19/19, `npm run lint:design` passes
   (all contrast pairs, no banned patterns), `npm run smoke` passes, `npm run shots` wrote
   24 screenshots to `docs/screens/`.
-- Build: JS 4.98 kB gzip, CSS 2.94 kB gzip, Latin Geist 29.4 kB — inside budget.
+- Build: JS 5.60 kB gzip, CSS 2.94 kB gzip, Latin Geist 29.4 kB — inside budget.
 - Built app served with the real `vercel.json` headers: no CSP violations on `/`,
   `/watch/:id`, `/search`, `/settings`.
 
@@ -48,10 +48,36 @@ Content quality is the one thing left that code cannot fix; see `docs/PROPOSALS.
 Screenshots stay on fixtures on purpose (`scripts/harness.mjs` sets `YT_KEY=''`), so
 `npm run shots` never spends quota.
 
+## Topics changed to study channels (2026-11-20)
+
+Owner decision: the app is now NEET/JEE study material only.
+
+- Tabs, in order: **All, Physics, Organic Chemistry, Physical Chemistry, Inorganic
+  Chemistry, Zoology, Botany**. Linear algebra and statistics are gone.
+- A hard channel allowlist lives in `config/app.json` → `channels`:
+  Physics Wallah, PW, PW NEET, Unacademy, Competition Wallah. Anything else is dropped
+  before the details call, so a wrong channel never reaches the page.
+- `include` now matches the **title only**, not the channel name. Otherwise every video
+  from "Physics Wallah" would have counted as a physics video.
+- Queries are `neet <subject> one shot`; plain `"physics lecture"` returned 1 usable video
+  out of 50, the one-shot wording returns 12–24.
+
+Live yields per topic, all from allowed channels: physics 18, organic chemistry 14,
+physical chemistry 18, inorganic chemistry 16, zoology 18, botany 18.
+
+Two UI issues found and fixed while checking:
+
+- Seven tabs overflow on a phone; the active tab is now scrolled into view on render
+  (it was off-screen entirely on a 390 px screen).
+- `npm run smoke` failed once because `scripts/harness.mjs` left the preview server alive
+  after each run (killing the shell, not the tree). It now kills the tree on Windows.
+
+`docs/screens/live/topics-*.png` are the real feed; `docs/screens/` stays on fixtures.
+
 ## Next
 1. Owner reviews the screenshots in `docs/screens/` and the app at 820×1180 and 1180×820.
 2. Owner adds a real `YT_KEY` and deploys to Vercel per `docs/SETUP.md`; check that
-   `/api/videos?topic=linear-algebra` returns `"source":"live"`.
+   `/api/videos?topic=physics` returns `"source":"live"`.
 3. Owner installs it on the iPad and reports what actually happens.
 
 ## Blockers

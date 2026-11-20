@@ -99,6 +99,14 @@ async function renderHome(gen: number, activeId: string | null) {
     if (gen !== generation) return;
     main.innerHTML = views.home(state, activeId);
     if (main.querySelector('.grid')) consumeFresh();
+    const active = main.querySelector<HTMLElement>('.tab[aria-current="page"]');
+    const tabs = active?.parentElement;
+    // Seven topics do not fit on a phone; keep the current one in sight.
+    if (active && tabs) {
+      const tab = active.getBoundingClientRect();
+      const row = tabs.getBoundingClientRect();
+      tabs.scrollLeft += tab.left - row.left - (row.width - tab.width) / 2;
+    }
   };
 
   paint();

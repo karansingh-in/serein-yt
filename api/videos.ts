@@ -1,7 +1,14 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import appConfig from '../config/app.json';
 import fixtures from '../fixtures/videos.json';
-import { decodeEntities, dedupe, hasPhrase, matchesRules, parseISODuration } from './filters';
+import {
+  channelAllowed,
+  decodeEntities,
+  dedupe,
+  hasPhrase,
+  matchesRules,
+  parseISODuration,
+} from './filters';
 import type { Topic, Video } from './filters';
 
 type Limits = {
@@ -12,7 +19,12 @@ type Limits = {
   manualRefreshMinutes: number;
 };
 
-const config = appConfig as unknown as { appName: string; topics: Topic[]; limits: Limits };
+const config = appConfig as unknown as {
+  appName: string;
+  channels: string[];
+  topics: Topic[];
+  limits: Limits;
+};
 
 type Query = Record<string, string | string[] | undefined>;
 type Req = IncomingMessage & { query?: Query };
@@ -45,7 +57,7 @@ async function fetchTopic(topic: Topic, text: string | undefined, limits: Limits
   const search = await call('search', {
     part: 'snippet',
     type: 'video',
-    maxResults: 25,
+    maxResults: 50,
     q: text ? `${text} ${topic.query}` : topic.query,
     videoEmbeddable: 'true',
     videoSyndicated: 'true',
@@ -58,7 +70,9 @@ async function fetchTopic(topic: Topic, text: string | undefined, limits: Limits
 
   const candidates: { id: string; snippet: any }[] = (search.items ?? [])
     .map((item: any) => ({ id: item.id?.videoId, snippet: item.snippet }))
-    .filter((item: any) => Boolean(item.id));
+    .filter((item: any) => Boolean(item.id))
+    // Only the owner's study channels; this is the hard content boundary.
+    .filter((item: any) => channelAllowed(item.snippet?.channelTitle ?? '', config.channels));
 
   if (candidates.length === 0) return [];
 

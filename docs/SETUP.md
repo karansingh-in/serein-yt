@@ -50,7 +50,7 @@ Without `YT_KEY` the function serves `fixtures/videos.json` and the app says
    Preview). Redeploy after adding it.
 4. Vercel detects `api/videos.ts` as a function automatically. `vercel.json` supplies the
    SPA rewrite, the CSP, the referrer policy and the asset cache headers.
-5. Check it: open `https://your-app.vercel.app/api/videos?topic=linear-algebra`. The JSON
+5. Check it: open `https://your-app.vercel.app/api/videos?topic=physics`. The JSON
    should contain `"source":"live"`. If it says `"source":"fixtures"`, the variable is
    missing or the deploy predates it.
 

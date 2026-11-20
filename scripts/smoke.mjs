@@ -19,8 +19,8 @@ await withBrowser(async (browser) => {
   const total = await page.locator('.card').count();
   check(total > 0, `home rendered no cards (${total})`);
 
-  await page.getByRole('link', { name: 'Statistics' }).click();
-  await page.waitForURL(/topic=statistics/);
+  await page.getByRole('link', { name: 'Zoology' }).click();
+  await page.waitForURL(/topic=zoology/);
   const filtered = await page.locator('.card').count();
   check(filtered === 3, `topic tab showed ${filtered} cards, expected 3`);
 
@@ -36,7 +36,7 @@ await withBrowser(async (browser) => {
   check(heading === title, 'watch heading does not match the card title');
 
   await page.goBack();
-  await page.waitForURL(/topic=statistics/);
+  await page.waitForURL(/topic=zoology/);
   const seen = await page.locator('.card.is-seen').count();
   check(seen > 0, 'opened video was not dimmed in the feed');
 
@@ -52,8 +52,11 @@ await withBrowser(async (browser) => {
     'theme did not survive a reload',
   );
 
-  await page.goto(BASE + '/search?q=matrix', { waitUntil: 'networkidle' });
-  check((await page.locator('.row').count()) > 0, 'search found no local results for "matrix"');
+  await page.goto(BASE + '/search?q=photosynthesis', { waitUntil: 'networkidle' });
+  check(
+    (await page.locator('.row').count()) > 0,
+    'search found no local results for "photosynthesis"',
+  );
 
   await page.goto(BASE + '/search?q=zzzz', { waitUntil: 'networkidle' });
   const empty = await page.locator('.empty').innerText();

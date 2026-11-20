@@ -43,6 +43,17 @@ export async function withBrowser(fn) {
     await fn(browser);
   } finally {
     if (browser) await browser.close();
-    server.kill();
+    // `shell: true` means server.pid is the shell; kill the tree or the port stays taken.
+    await new Promise((resolve) => {
+      if (process.platform !== 'win32') {
+        server.kill();
+        resolve();
+        return;
+      }
+      spawn('taskkill', ['/pid', String(server.pid), '/T', '/F'], { stdio: 'ignore' }).on(
+        'exit',
+        () => resolve(),
+      );
+    });
   }
 }

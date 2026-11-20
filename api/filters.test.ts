@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { decodeEntities, dedupe, hasPhrase, interleave, matchesRules, parseISODuration } from './filters';
+import {
+  channelAllowed,
+  decodeEntities,
+  dedupe,
+  hasPhrase,
+  interleave,
+  matchesRules,
+  parseISODuration,
+} from './filters';
 
 describe('parseISODuration', () => {
   it('reads hours, minutes and seconds', () => {
@@ -40,6 +48,30 @@ describe('matchesRules', () => {
 
   it('drops excluded phrases before checking include', () => {
     expect(matchesRules(video, ['linear algebra'], ['lecture'])).toBe(false);
+  });
+
+  it('does not let the channel name satisfy include', () => {
+    const fromPhysicsChannel = { title: 'Organic chemistry lecture', channel: 'Physics Wallah' };
+    expect(matchesRules(fromPhysicsChannel, ['physics'], [])).toBe(false);
+    expect(matchesRules(fromPhysicsChannel, ['organic chemistry'], [])).toBe(true);
+  });
+});
+
+describe('channelAllowed', () => {
+  it('accepts the owner channels and their spin-offs', () => {
+    expect(channelAllowed('Physics Wallah', ['Physics Wallah', 'PW', 'Unacademy'])).toBe(true);
+    expect(channelAllowed('PW NEET', ['Physics Wallah', 'PW', 'Unacademy'])).toBe(true);
+    expect(channelAllowed('Unacademy NEET', ['Physics Wallah', 'PW', 'Unacademy'])).toBe(true);
+  });
+
+  it('rejects everything else, including lookalikes', () => {
+    expect(channelAllowed('JPWide', ['Physics Wallah', 'PW'])).toBe(false);
+    expect(channelAllowed('MIT OpenCourseWare', ['Physics Wallah', 'PW'])).toBe(false);
+    expect(channelAllowed('', ['PW'])).toBe(false);
+  });
+
+  it('allows everything when the list is empty', () => {
+    expect(channelAllowed('Anyone', [])).toBe(true);
   });
 });
 
