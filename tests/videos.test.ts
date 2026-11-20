@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import handler from './videos';
+import handler from '../api/videos';
 
 function fakeResponse() {
   const res = {

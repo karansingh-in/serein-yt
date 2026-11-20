@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import appConfig from '../config/app.json';
-import fixtures from '../fixtures/videos.json';
+import appConfig from '../config/app.json' with { type: 'json' };
+import fixtures from '../fixtures/videos.json' with { type: 'json' };
 import {
   channelAllowed,
   decodeEntities,
@@ -8,7 +8,7 @@ import {
   hasPhrase,
   matchesRules,
   parseISODuration,
-} from './filters';
+} from './filters.js';
 import type { Topic, Video } from './filters';
 
 type Limits = {

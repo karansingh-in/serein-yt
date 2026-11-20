@@ -7,7 +7,7 @@ import {
   interleave,
   matchesRules,
   parseISODuration,
-} from './filters';
+} from '../api/filters';
 
 describe('parseISODuration', () => {
   it('reads hours, minutes and seconds', () => {
