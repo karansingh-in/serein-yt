@@ -40,7 +40,12 @@ for (const topic of app.topics) {
 }
 
 let generation = 0;
-let webSearch: { key: string; items: Video[]; loading: boolean; failed: boolean } | null = null;
+let webSearch: {
+  key: string;
+  items: Video[];
+  loading: boolean;
+  failed: false | 'quota' | 'other';
+} | null = null;
 
 function findVideo(id: string) {
   for (const entry of state.store.values()) {
@@ -141,10 +146,19 @@ async function renderWatch(gen: number, id: string) {
   }
 }
 
-function renderSearch(gen: number, url: URL) {
+async function renderSearch(gen: number, url: URL) {
   const query = (url.searchParams.get('q') ?? '').trim();
   const activeId = url.searchParams.get('topic');
   const wantsWeb = url.searchParams.get('web') === '1' && Boolean(query) && Boolean(activeId);
+  const key = `${activeId}|${query}`;
+  const ids = activeId ? [activeId] : app.topics.map((topic) => topic.id);
+
+  // Local search reads the cached topics, so a cold or half-loaded visit has to fill them first.
+  const loading = () =>
+    ids.some((id) => {
+      const entry = state.store.get(id);
+      return !entry || isStale(entry);
+    });
 
   const paint = () => {
     if (gen !== generation) return;
@@ -152,29 +166,46 @@ function renderSearch(gen: number, url: URL) {
       query,
       activeId,
       local: query ? localSearch(query, activeId) : [],
-      web: webSearch && webSearch.key === `${activeId}|${query}` ? webSearch : null,
+      web: webSearch && webSearch.key === key ? webSearch : null,
+      loading: loading(),
     });
   };
 
-  if (!wantsWeb) {
-    paint();
-    return;
+  const work: Promise<unknown>[] = [];
+
+  if (loading()) {
+    work.push(
+      Promise.all(ids.map((id) => loadTopic(id))).then(() => {
+        if (gen === generation) paint();
+      }),
+    );
   }
 
-  const key = `${activeId}|${query}`;
-  if (!webSearch || webSearch.key !== key) {
+  if (wantsWeb && (!webSearch || webSearch.key !== key)) {
     webSearch = { key, items: [], loading: true, failed: false };
-    fetchSearch(activeId!, query)
-      .then((result) => {
-        if (webSearch?.key === key) webSearch = { key, items: result.items, loading: false, failed: false };
-        paint();
-      })
-      .catch(() => {
-        if (webSearch?.key === key) webSearch = { key, items: [], loading: false, failed: true };
-        paint();
-      });
+    work.push(
+      fetchSearch(activeId!, query)
+        .then((result) => {
+          if (webSearch?.key === key) webSearch = { key, items: result.items, loading: false, failed: false };
+        })
+        .catch((error: unknown) => {
+          if (webSearch?.key === key) {
+            webSearch = {
+              key,
+              items: [],
+              loading: false,
+              failed: error instanceof Error && error.message === 'quota_exceeded' ? 'quota' : 'other',
+            };
+          }
+        })
+        .then(() => {
+          if (gen === generation) paint();
+        }),
+    );
   }
+
   paint();
+  await Promise.all(work);
 }
 
 function render() {
@@ -194,7 +225,7 @@ function render() {
   }
 
   if (path === '/search') {
-    renderSearch(gen, url);
+    void renderSearch(gen, url);
     return;
   }
 
@@ -256,7 +287,10 @@ main.addEventListener('click', (event) => {
 form.addEventListener('submit', (event) => {
   event.preventDefault();
   const query = input.value.trim();
-  navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
+  const here = new URL(location.href);
+  const topic = here.pathname === '/search' ? here.searchParams.get('topic') : null;
+  const keep = topic ? `&topic=${encodeURIComponent(topic)}` : '';
+  navigate(query ? `/search?q=${encodeURIComponent(query)}${keep}` : '/search');
 });
 
 window.addEventListener('popstate', render);

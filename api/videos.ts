@@ -31,6 +31,15 @@ type Req = IncomingMessage & { query?: Query };
 
 const API = 'https://www.googleapis.com/youtube/v3';
 
+class UpstreamError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 function send(res: ServerResponse, status: number, body: unknown, cache?: string) {
   if (res.headersSent) return;
   res.statusCode = status;
@@ -47,7 +56,10 @@ async function call(endpoint: string, params: Record<string, string | number | u
   }
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`${endpoint} ${response.status} ${await response.text()}`);
+    throw new UpstreamError(
+      response.status,
+      `${endpoint} ${response.status} ${await response.text()}`,
+    );
   }
   return (await response.json()) as Record<string, any>;
 }
@@ -159,6 +171,10 @@ export default async function handler(req: Req, res: ServerResponse) {
     return send(res, 200, { items, fetchedAt: Date.now(), source: 'api' }, cache);
   } catch (error) {
     console.error('videos', error);
+    // The daily search quota is a wait, not a fault; say so instead of "connection problem".
+    if (error instanceof UpstreamError && error.status === 429) {
+      return send(res, 503, { error: 'quota_exceeded' }, 'no-store');
+    }
     return send(res, 502, { error: 'upstream_failed' }, 'no-store');
   }
 }

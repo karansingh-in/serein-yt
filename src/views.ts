@@ -171,7 +171,8 @@ export type SearchView = {
   query: string;
   activeId: string | null;
   local: Video[];
-  web: { items: Video[]; loading: boolean; failed: boolean } | null;
+  web: { items: Video[]; loading: boolean; failed: false | 'quota' | 'other' } | null;
+  loading: boolean;
 };
 
 export function search(state: State, view: SearchView) {
@@ -195,7 +196,9 @@ export function search(state: State, view: SearchView) {
   if (!view.query) {
     body = `<div class="empty"><p>Type above to search your topics.</p></div>`;
   } else if (view.local.length === 0 && !view.web) {
-    body = `<div class="empty">
+    body = view.loading
+      ? `<div class="empty"><p aria-busy="true">Searching your topics…</p></div>`
+      : `<div class="empty">
         <p>Nothing found in your topics.</p>
         ${view.activeId ? `<a class="link" href="${webHref}" data-link>Search this topic on the web</a>` : ''}
       </div>`;
@@ -205,7 +208,11 @@ export function search(state: State, view: SearchView) {
       if (view.web.loading) {
         body += `<p class="note" aria-busy="true">Searching the web…</p>`;
       } else if (view.web.failed) {
-        body += `<p class="note" role="status">Couldn't search the web. Check the connection and try again.</p>`;
+        body += `<p class="note" role="status">${
+          view.web.failed === 'quota'
+            ? 'The daily search quota is used up. It resets at midnight Pacific.'
+            : "Couldn't search the web. Check the connection and try again."
+        }</p>`;
       } else if (view.web.items.length) {
         body += `<h2 class="section-label">From the web</h2><div class="rows">${rows(view.web.items)}</div>`;
       } else {

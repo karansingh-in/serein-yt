@@ -28,3 +28,5 @@ Record every dependency, deviation from SPEC.md, and adjusted design token, with
 - **Topic queries use the `neet … one shot` wording.** Reason: measured. `"physics lecture"` yielded 1 usable video of 50; `"neet physics one shot"` yielded 24.
 - **The function must be valid ESM on its own** (`with { type: 'json' }`, `./filters.js`). Reason: `"type": "module"` makes Vercel run it as ESM, where JSON needs an import attribute and relative imports need an extension. Local Vite hid this by bundling. Cost of ignoring it: every request 500s.
 - **Tests live in `tests/`, not `api/`.** Reason: Vercel turns every file in `api/` into a public function, including test files.
+- **The search screen loads the topics it needs.** Reason: local search can only read cached topics, so a cold deep link had nothing to search and said "Nothing found". Cost: a cold `/search` can trigger the same six topic fetches as home; they are CDN-cached.
+- **Quota exhaustion answers `503 quota_exceeded`, not `502`.** Reason: Google's 429 is a wait, not a fault; the client can say so instead of blaming the connection.

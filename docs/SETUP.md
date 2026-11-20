@@ -71,7 +71,8 @@ Any static host works for the files, but the function is written for Vercel's No
 | What you see | What it means |
 |---|---|
 | Page says "Couldn't load your topics", `/api/videos` returns **500** `FUNCTION_INVOCATION_FAILED` | The function failed to load at all — not a key problem. Check the deploy log for the module error. |
-| `/api/videos` returns **502** `upstream_failed` | The key was rejected or the daily search quota is spent. Quota resets at midnight Pacific. |
+| `/api/videos` returns **502** `upstream_failed` | The key was rejected or the API is unreachable. |
+| `/api/videos` returns **503** `quota_exceeded` | The daily search quota is spent. It resets at midnight Pacific. |
 | `"source":"fixtures"` | `YT_KEY` is not set for that environment, or the deploy predates it. |
 | Page loads but thumbnails are blank | NextDNS is blocking `ytimg.com`; allowlist it. |
 

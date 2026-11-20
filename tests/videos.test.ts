@@ -100,6 +100,22 @@ describe('videos handler', () => {
     expect(urls[1]).toContain('/youtube/v3/videos?');
   });
 
+  it('reports an exhausted quota separately from a broken upstream', async () => {
+    process.env.YT_KEY = 'test';
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: false, status: 429, text: async () => '{"error":{"code":429}}' })),
+    );
+
+    const res = fakeResponse();
+    await handler(request({ topic: 'physics' }) as never, res as never);
+
+    expect(res.statusCode).toBe(503);
+    expect(JSON.parse(res.body).error).toBe('quota_exceeded');
+    quiet.mockRestore();
+  });
+
   it('serves fixtures when no key is set', async () => {
     delete process.env.YT_KEY;
 

@@ -17,10 +17,10 @@ Phases 1–3 built. Live data verified. Topics scoped to NEET/JEE study channels
 - **Phase 3 — install and ship.** Manifest, 192/512/maskable icons, apple-touch icon, apple
   meta tags, `vercel.json` (SPA rewrite, CSP, referrer policy, nosniff, permissions policy,
   asset caching), `docs/SETUP.md`.
-- Checks: `npm run typecheck` clean, `npm test` 19/19, `npm run lint:design` passes
+- Checks: `npm run typecheck` clean, `npm test` 20/20, `npm run lint:design` passes
   (all contrast pairs, no banned patterns), `npm run smoke` passes, `npm run shots` wrote
   24 screenshots to `docs/screens/`.
-- Build: JS 5.60 kB gzip, CSS 2.94 kB gzip, Latin Geist 29.4 kB — inside budget.
+- Build: JS 5.83 kB gzip, CSS 2.94 kB gzip, Latin Geist 29.4 kB — inside budget.
 - Built app served with the real `vercel.json` headers: no CSP violations on `/`,
   `/watch/:id`, `/search`, `/settings`.
 
@@ -100,6 +100,29 @@ about 100 searches a day; a full home load is six searches. Testing today ran it
 dried-up key answers `429`, which the handler turns into a per-topic 502. That is not fatal:
 topics that loaded still render, with "Couldn't refresh. Showing what was saved at …".
 Quota resets at midnight Pacific.
+
+## Search found nothing (2026-11-20)
+
+Symptom: type anything on the search page and get "Nothing found in your topics" even
+though the home feed has videos.
+
+Cause: the search screen only read `state.store` and never loaded anything. On a cold
+visit — a deep link, a reload after the cache was cleared, or typing before the home
+feed finished — the store was empty or partial, so local search had nothing to look in.
+The smoke test missed it because it visited the home page first and waited for
+`networkidle`, which filled every topic.
+
+Fixed by making the search screen load the missing topics itself (the same `loadTopic`
+path as home) and repaint, plus a real loading state: "Searching your topics…" while it
+works, instead of claiming there is nothing. The query also keeps the selected topic when
+you refine it from the search page.
+
+Also: an exhausted quota now answers `503 {"error":"quota_exceeded"}` instead of a
+generic 502, and the client says "The daily search quota is used up. It resets at
+midnight Pacific." rather than blaming the connection. Test pins the 503.
+
+Regression cover: `npm run smoke` now opens `/search?q=photosynthesis` in a **fresh
+browser context** and requires rows, so the cold path stays fixed.
 
 ## Next
 1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and

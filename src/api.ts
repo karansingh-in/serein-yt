@@ -50,7 +50,10 @@ export function isStale(state: TopicState) {
 async function request(params: Record<string, string>): Promise<TopicState> {
   const query = new URLSearchParams(params).toString();
   const response = await fetch(`/api/videos?${query}`);
-  if (!response.ok) throw new Error(`http_${response.status}`);
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `http_${response.status}`);
+  }
   return (await response.json()) as TopicState;
 }
 

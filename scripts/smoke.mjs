@@ -58,6 +58,19 @@ await withBrowser(async (browser) => {
     'search found no local results for "photosynthesis"',
   );
 
+  // a cold visit straight to /search must load the topics itself, not say "Nothing found"
+  const coldSearch = await browser.newContext({ viewport: { width: 1180, height: 820 } });
+  const deep = await coldSearch.newPage();
+  await deep.goto(BASE + '/search?q=photosynthesis', { waitUntil: 'networkidle' });
+  await deep
+    .waitForFunction(() => document.querySelectorAll('.row').length > 0, null, { timeout: 5000 })
+    .catch(() => {});
+  check(
+    (await deep.locator('.row').count()) > 0,
+    'cold /search found no local results for "photosynthesis"',
+  );
+  await coldSearch.close();
+
   await page.goto(BASE + '/search?q=zzzz', { waitUntil: 'networkidle' });
   const empty = await page.locator('.empty').innerText();
   check(empty.includes('Nothing found'), `empty search state missing: ${empty}`);
