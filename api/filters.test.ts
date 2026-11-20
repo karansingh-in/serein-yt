@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dedupe, hasPhrase, interleave, matchesRules, parseISODuration } from './filters';
+import { decodeEntities, dedupe, hasPhrase, interleave, matchesRules, parseISODuration } from './filters';
 
 describe('parseISODuration', () => {
   it('reads hours, minutes and seconds', () => {
@@ -55,5 +55,18 @@ describe('interleave', () => {
 describe('dedupe', () => {
   it('keeps the first of each id', () => {
     expect(dedupe([{ id: 'x' }, { id: 'y' }, { id: 'x' }])).toEqual([{ id: 'x' }, { id: 'y' }]);
+  });
+});
+
+describe('decodeEntities', () => {
+  it('turns the escapes the data API sends back into text', () => {
+    expect(decodeEntities('Gil Strang&#39;s Final Lecture')).toBe("Gil Strang's Final Lecture");
+    expect(decodeEntities('Math &amp; Physics &quot;101&quot;')).toBe('Math & Physics "101"');
+    expect(decodeEntities('A &#x2014; B')).toBe('A — B');
+  });
+
+  it('leaves anything it does not recognise alone', () => {
+    expect(decodeEntities('&unknown; & 5 < 6')).toBe('&unknown; & 5 < 6');
+    expect(decodeEntities('')).toBe('');
   });
 });

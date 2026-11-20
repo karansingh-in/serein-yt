@@ -35,7 +35,9 @@ export function ago(iso: string) {
   const weeks = Math.round(days / 7);
   if (weeks < 5) return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
   const months = Math.round(days / 30);
-  return months <= 1 ? '1 month ago' : `${months} months ago`;
+  if (months < 12) return months <= 1 ? '1 month ago' : `${months} months ago`;
+  const years = Math.round(days / 365);
+  return years <= 1 ? '1 year ago' : `${years} years ago`;
 }
 
 const timeOf = (stamp: number) =>

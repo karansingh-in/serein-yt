@@ -33,6 +33,8 @@ export async function withBrowser(fn) {
   const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
     stdio: 'ignore',
     shell: true,
+    // Screenshots and smoke tests must be deterministic and must not spend quota.
+    env: { ...process.env, YT_KEY: '' },
   });
   let browser;
   try {

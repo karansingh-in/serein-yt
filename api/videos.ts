@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import appConfig from '../config/app.json';
 import fixtures from '../fixtures/videos.json';
-import { dedupe, hasPhrase, matchesRules, parseISODuration } from './filters';
+import { decodeEntities, dedupe, hasPhrase, matchesRules, parseISODuration } from './filters';
 import type { Topic, Video } from './filters';
 
 type Limits = {
@@ -20,6 +20,7 @@ type Req = IncomingMessage & { query?: Query };
 const API = 'https://www.googleapis.com/youtube/v3';
 
 function send(res: ServerResponse, status: number, body: unknown, cache?: string) {
+  if (res.headersSent) return;
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   if (cache) res.setHeader('Cache-Control', cache);
@@ -41,7 +42,7 @@ async function call(endpoint: string, params: Record<string, string | number | u
 
 /** One search.list (100 units) plus one videos.list (1 unit) for the topic. */
 async function fetchTopic(topic: Topic, text: string | undefined, limits: Limits): Promise<Video[]> {
-  const search = await call('search.list', {
+  const search = await call('search', {
     part: 'snippet',
     type: 'video',
     maxResults: 25,
@@ -61,8 +62,8 @@ async function fetchTopic(topic: Topic, text: string | undefined, limits: Limits
 
   if (candidates.length === 0) return [];
 
-  const details = await call('videos.list', {
-    part: 'contentDetails,status',
+  const details = await call('videos', {
+    part: 'snippet,contentDetails,status',
     id: candidates.map((item) => item.id).join(','),
   });
 
@@ -81,13 +82,16 @@ async function fetchTopic(topic: Topic, text: string | undefined, limits: Limits
     const durationSec = parseISODuration(detail.contentDetails?.duration ?? '');
     if (durationSec < limits.minDurationSec) continue;
 
+    const info = detail.snippet ?? {};
+
     const video = {
       id,
-      title: snippet.title ?? '',
-      channel: snippet.channelTitle ?? '',
+      title: decodeEntities(info.title ?? snippet.title ?? ''),
+      channel: decodeEntities(info.channelTitle ?? snippet.channelTitle ?? ''),
       durationSec,
-      publishedAt: snippet.publishedAt ?? '',
-      description: snippet.description ?? '',
+      publishedAt: info.publishedAt ?? snippet.publishedAt ?? '',
+      // search.list truncates the description; videos.list has the whole one.
+      description: decodeEntities(info.description ?? snippet.description ?? ''),
       thumbnail: snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url ?? '',
     };
 

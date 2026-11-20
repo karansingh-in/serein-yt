@@ -20,3 +20,6 @@ Record every dependency, deviation from SPEC.md, and adjusted design token, with
 - **`vercel.json` headers instead of `_headers`.** Reason: Vercel ignores `_headers`.
 - **Checks cut to `typecheck`, `test`, `lint:design`, `smoke`, `shots`.** Reason: `check:size` duplicates the build log, and axe plus WebKit need browser downloads that were not allowed. Accessibility is covered by the contrast check, labels and focus styles; it is listed as a gap, not as done.
 - **`.zip` archives of the source material are git-ignored.** Reason: binary copies of files already in the repo.
+- **`videos.list` also asks for `snippet`.** Reason: `search.list` truncates descriptions, so the watch screen could never offer "More". Same quota cost.
+- **Screenshots and smoke tests pin `YT_KEY=''`** (`scripts/harness.mjs`). Reason: deterministic output and no quota spent on every visual check. Live runs use a separate preview with the real key.
+- **Thumbnails stay on the API `high` size with `object-fit: cover`.** Reason: SPEC §7. It is 480×360 (4:3) and `cover` crops the letterbox bars; unverified here because this machine blocks `i.ytimg.com`.

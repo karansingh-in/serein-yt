@@ -4,16 +4,17 @@ import handler from './api/videos';
 
 // The same handler runs on Vercel in production; this mounts it locally.
 function localApi() {
-  return (req: IncomingMessage, res: ServerResponse, next?: () => void) => {
+  return async (req: IncomingMessage, res: ServerResponse, next?: () => void) => {
     const url = new URL(req.url ?? '/', 'http://localhost');
-    void handler(Object.assign(req, { query: Object.fromEntries(url.searchParams) }), res);
+    await handler(Object.assign(req, { query: Object.fromEntries(url.searchParams) }), res);
     if (!res.writableEnded) next?.();
   };
 }
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  if (env.YT_KEY) process.env.YT_KEY = env.YT_KEY;
+  // An explicit YT_KEY in the environment wins, including an empty one (fixtures).
+  if (process.env.YT_KEY === undefined && env.YT_KEY) process.env.YT_KEY = env.YT_KEY;
 
   return {
     plugins: [

@@ -20,8 +20,28 @@ export type Video = {
   thumbnail: string;
 };
 
-/** PT1H2M3S -> 3723. Anything unparseable is 0, which the duration filter drops. */
-export function parseISODuration(iso: string): number {
+const NAMED: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+};
+
+/** The data API returns snippet text HTML-escaped (`Gil Strang&#39;s`). */
+export function decodeEntities(text: string): string {
+  return text.replace(/&(#[xX]?[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, code: string) => {
+    if (code[0] === '#') {
+      const hex = code[1] === 'x' || code[1] === 'X';
+      const n = parseInt(code.slice(hex ? 2 : 1), hex ? 16 : 10);
+      return Number.isFinite(n) && n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : match;
+    }
+    return NAMED[code.toLowerCase()] ?? match;
+  });
+}
+
+/** PT1H2M3S -> 3723. Anything unparseable is 0, which the duration filter drops. */export function parseISODuration(iso: string): number {
   const m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(iso);
   if (!m) return 0;
   const [, d, h, mi, s] = m;

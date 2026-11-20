@@ -42,6 +42,7 @@ const details = {
       id: 'keep',
       contentDetails: { duration: 'PT20M' },
       status: { embeddable: true, uploadStatus: 'processed' },
+      snippet: { title: 'Linear algebra lecture one', description: 'The full description, which is much longer than the truncated one.' },
     },
     {
       id: 'short',
@@ -76,7 +77,7 @@ describe('videos handler', () => {
       'fetch',
       vi.fn(async (url: URL) => ({
         ok: true,
-        json: async () => (String(url).includes('search.list') ? search : details),
+        json: async () => (String(url).includes('/youtube/v3/search?') ? search : details),
       })),
     );
 
@@ -88,6 +89,14 @@ describe('videos handler', () => {
     expect(body.source).toBe('api');
     expect(body.items.map((item: { id: string }) => item.id)).toEqual(['keep']);
     expect(body.items[0].durationSec).toBe(1200);
+    expect(body.items[0].description).toContain('much longer');
+
+    // The API path is /youtube/v3/search, not /youtube/v3/search.list.
+    const urls = (globalThis.fetch as unknown as { mock: { calls: [URL][] } }).mock.calls.map(
+      ([url]) => String(url),
+    );
+    expect(urls[0]).toContain('/youtube/v3/search?');
+    expect(urls[1]).toContain('/youtube/v3/videos?');
   });
 
   it('serves fixtures when no key is set', async () => {
@@ -113,7 +122,7 @@ describe('videos handler', () => {
       'fetch',
       vi.fn(async (url: URL) => ({
         ok: true,
-        json: async () => (String(url).includes('search.list') ? search : details),
+        json: async () => (String(url).includes('/youtube/v3/search?') ? search : details),
       })),
     );
 
