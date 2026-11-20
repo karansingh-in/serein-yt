@@ -75,10 +75,10 @@ Two UI issues found and fixed while checking:
 `docs/screens/live/topics-*.png` are the real feed; `docs/screens/` stays on fixtures.
 
 ## Next
-1. Owner reviews the screenshots in `docs/screens/` and the app at 820×1180 and 1180×820.
-2. Owner adds a real `YT_KEY` and deploys to Vercel per `docs/SETUP.md`; check that
-   `/api/videos?topic=physics` returns `"source":"live"`.
-3. Owner installs it on the iPad and reports what actually happens.
+1. Owner imports `github.com/karansingh-in/serein-yt` into Vercel, adds `YT_KEY`, deploys
+   (steps in `docs/SETUP.md` §3), then checks `/api/videos?topic=physics` returns
+   `"source":"api"`.
+2. Owner installs it on the iPad and reports what actually happens.
 
 ## Blockers
 - None.

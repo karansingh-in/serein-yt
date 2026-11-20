@@ -41,18 +41,28 @@ Without `YT_KEY` the function serves `fixtures/videos.json` and the app says
 
 ## 3. Deploy to Vercel
 
-1. Push the repository to GitHub.
-2. Vercel → **Add New → Project → import the repo.**
+The repo is already on GitHub: `github.com/karansingh-in/serein-yt`, branch `master`.
+
+1. [vercel.com](https://vercel.com) → **Add New → Project → Import Git Repository** →
+   `serein-yt`. Authorise GitHub the first time if asked. Hobby (free) is enough.
+2. Leave the detected settings alone; they should read:
    - Framework preset: **Vite**
    - Build command: `npm run build`
    - Output directory: `dist`
-3. **Settings → Environment Variables → `YT_KEY`** = the key from step 1 (Production and
-   Preview). Redeploy after adding it.
-4. Vercel detects `api/videos.ts` as a function automatically. `vercel.json` supplies the
-   SPA rewrite, the CSP, the referrer policy and the asset cache headers.
-5. Check it: open `https://your-app.vercel.app/api/videos?topic=physics`. The JSON
-   should contain `"source":"live"`. If it says `"source":"fixtures"`, the variable is
-   missing or the deploy predates it.
+   - Root directory: `./`
+3. **Environment Variables** (before the first deploy, on the same screen):
+   `YT_KEY` = the key from step 1, applied to Production, Preview and Development.
+4. **Deploy.** First build takes about a minute. `api/videos.ts` is picked up as a Node
+   function automatically; `vercel.json` supplies the SPA rewrite, the CSP, the referrer
+   policy and the asset cache headers.
+5. Check it: open `https://<project>.vercel.app/api/videos?topic=physics`. The JSON should
+   contain `"source":"api"`. If it says `"fixtures"`, the variable is missing or the deploy
+   predates it — add it, then **Deployments → ⋯ → Redeploy**.
+6. Check the app itself: the home page should have no "Sample videos" line, and the CSP
+   must not block thumbnails (`i.ytimg.com`) or the player (`www.youtube-nocookie.com`).
+
+Later deploys are automatic: every push to `master` builds and ships. Environment variables
+are not in the repo, so a fresh clone has no key until you add one.
 
 Any static host works for the files, but the function is written for Vercel's Node runtime.
 
