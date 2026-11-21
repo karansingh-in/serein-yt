@@ -154,6 +154,7 @@
   "limits": {
     "perTopic": 18,
     "homeTotal": 36,
+    "searchResults": 20,
     "minDurationSec": 180,
     "cacheHours": 6,
     "manualRefreshMinutes": 60

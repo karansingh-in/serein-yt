@@ -150,7 +150,7 @@ export function watch(video: Video | null, notFound: boolean) {
     '?rel=0&iv_load_policy=3&playsinline=1';
   const long = video.description.length > 220;
 
-  return `<div class="view watch">
+  return `<div class="view watch" id="watch">
       <a class="back" href="/" data-link>Back</a>
       <div class="stage">
         <iframe
@@ -161,7 +161,10 @@ export function watch(video: Video | null, notFound: boolean) {
           allowfullscreen></iframe>
       </div>
       <h1 class="watch__title">${esc(video.title)}</h1>
-      <p class="watch__meta">${esc(metaLine(video))}</p>
+      <div class="watch__actions">
+        <p class="watch__meta">${esc(metaLine(video))}</p>
+        <button class="btn" type="button" data-action="maximize" aria-pressed="false">Maximize</button>
+      </div>
       <p class="watch__desc${long ? ' is-clamped' : ''}" id="description">${esc(video.description)}</p>
       ${long ? '<button class="link" type="button" data-action="expand" aria-expanded="false">More</button>' : ''}
     </div>`;

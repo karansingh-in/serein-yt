@@ -12,7 +12,7 @@ const sizes = [
 const screens = [
   ['home', '/'],
   ['watch', '/watch/fixture-01'],
-  ['search', '/search?q=eigen'],
+  ['search', '/search?q=photosynthesis'],
   ['settings', '/settings'],
 ];
 
@@ -51,6 +51,15 @@ await withBrowser(async (browser) => {
         const file = `${OUT}/${screenName}-${sizeName}-${theme}.png`;
         await page.screenshot({ path: file, fullPage: true });
         console.log(file);
+
+        if (screenName === 'watch') {
+          await page.getByRole('button', { name: 'Maximize' }).click();
+          await page.waitForTimeout(250);
+          const maxFile = `${OUT}/watch-max-${sizeName}-${theme}.png`;
+          await page.screenshot({ path: maxFile });
+          console.log(maxFile);
+          await page.keyboard.press('Escape');
+        }
       }
       await context.close();
     }

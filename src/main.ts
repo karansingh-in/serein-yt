@@ -55,12 +55,11 @@ function findVideo(id: string) {
   return undefined;
 }
 
-function localSearch(query: string, topicId: string | null) {
+function localSearch(query: string) {
   const needle = query.toLowerCase();
-  const entries = topicId ? [state.store.get(topicId)] : [...state.store.values()];
   const seen = new Set<string>();
-  return entries
-    .flatMap((entry) => entry?.items ?? [])
+  return [...state.store.values()]
+    .flatMap((entry) => entry.items)
     .filter((video) => {
       if (seen.has(video.id)) return false;
       const hit =
@@ -97,6 +96,16 @@ function consumeFresh() {
   }
 }
 
+function revealActiveTab() {
+  const active = main.querySelector<HTMLElement>('.tab[aria-current="page"]');
+  const tabs = active?.parentElement;
+  if (!active || !tabs) return;
+  // Seven topics do not fit on a phone; keep the current one in sight.
+  const tab = active.getBoundingClientRect();
+  const row = tabs.getBoundingClientRect();
+  tabs.scrollLeft += tab.left - row.left - (row.width - tab.width) / 2;
+}
+
 async function renderHome(gen: number, activeId: string | null) {
   const ids = activeId ? [activeId] : app.topics.map((topic) => topic.id);
 
@@ -104,14 +113,7 @@ async function renderHome(gen: number, activeId: string | null) {
     if (gen !== generation) return;
     main.innerHTML = views.home(state, activeId);
     if (main.querySelector('.grid')) consumeFresh();
-    const active = main.querySelector<HTMLElement>('.tab[aria-current="page"]');
-    const tabs = active?.parentElement;
-    // Seven topics do not fit on a phone; keep the current one in sight.
-    if (active && tabs) {
-      const tab = active.getBoundingClientRect();
-      const row = tabs.getBoundingClientRect();
-      tabs.scrollLeft += tab.left - row.left - (row.width - tab.width) / 2;
-    }
+    revealActiveTab();
   };
 
   paint();
@@ -146,70 +148,61 @@ async function renderWatch(gen: number, id: string) {
   }
 }
 
-async function renderSearch(gen: number, url: URL) {
+function renderSearch(gen: number, url: URL) {
   const query = (url.searchParams.get('q') ?? '').trim();
-  const activeId = url.searchParams.get('topic');
-  const wantsWeb = url.searchParams.get('web') === '1' && Boolean(query) && Boolean(activeId);
-  const key = `${activeId}|${query}`;
-  const ids = activeId ? [activeId] : app.topics.map((topic) => topic.id);
-
-  // Local search reads the cached topics, so a cold or half-loaded visit has to fill them first.
-  const loading = () =>
-    ids.some((id) => {
-      const entry = state.store.get(id);
-      return !entry || isStale(entry);
-    });
 
   const paint = () => {
     if (gen !== generation) return;
     main.innerHTML = views.search(state, {
       query,
-      activeId,
-      local: query ? localSearch(query, activeId) : [],
-      web: webSearch && webSearch.key === key ? webSearch : null,
-      loading: loading(),
+      local: query ? localSearch(query) : [],
+      web: webSearch && webSearch.key === query ? webSearch : null,
     });
   };
 
-  const work: Promise<unknown>[] = [];
-
-  if (loading()) {
-    work.push(
-      Promise.all(ids.map((id) => loadTopic(id))).then(() => {
+  if (query && (!webSearch || webSearch.key !== query)) {
+    webSearch = { key: query, items: [], loading: true, failed: false };
+    fetchSearch(query)
+      .then((result) => {
+        if (webSearch?.key === query) {
+          webSearch = { key: query, items: result.items, loading: false, failed: false };
+        }
+      })
+      .catch((error: unknown) => {
+        if (webSearch?.key === query) {
+          webSearch = {
+            key: query,
+            items: [],
+            loading: false,
+            failed:
+              error instanceof Error && error.message === 'quota_exceeded' ? 'quota' : 'other',
+          };
+        }
+      })
+      .then(() => {
         if (gen === generation) paint();
-      }),
-    );
-  }
-
-  if (wantsWeb && (!webSearch || webSearch.key !== key)) {
-    webSearch = { key, items: [], loading: true, failed: false };
-    work.push(
-      fetchSearch(activeId!, query)
-        .then((result) => {
-          if (webSearch?.key === key) webSearch = { key, items: result.items, loading: false, failed: false };
-        })
-        .catch((error: unknown) => {
-          if (webSearch?.key === key) {
-            webSearch = {
-              key,
-              items: [],
-              loading: false,
-              failed: error instanceof Error && error.message === 'quota_exceeded' ? 'quota' : 'other',
-            };
-          }
-        })
-        .then(() => {
-          if (gen === generation) paint();
-        }),
-    );
+      });
   }
 
   paint();
-  await Promise.all(work);
+}
+
+function setMaximized(on: boolean) {
+  const watch = document.getElementById('watch');
+  if (!watch) return;
+  watch.classList.toggle('is-max', on);
+  document.documentElement.classList.toggle('is-locked', on);
+  const button = watch.querySelector<HTMLButtonElement>('[data-action="maximize"]');
+  if (button) {
+    button.setAttribute('aria-pressed', String(on));
+    button.textContent = on ? 'Exit' : 'Maximize';
+    if (on) button.focus();
+  }
 }
 
 function render() {
   const gen = ++generation;
+  document.documentElement.classList.remove('is-locked');
   const url = new URL(location.href);
   const path = url.pathname;
   input.value = path === '/search' ? (url.searchParams.get('q') ?? '') : '';
@@ -266,6 +259,12 @@ main.addEventListener('click', (event) => {
     return;
   }
 
+  if (action === 'maximize') {
+    const watch = document.getElementById('watch');
+    if (watch) setMaximized(!watch.classList.contains('is-max'));
+    return;
+  }
+
   if (action === 'expand') {
     const description = document.getElementById('description');
     if (!description) return;
@@ -282,6 +281,16 @@ main.addEventListener('click', (event) => {
     target.setAttribute('aria-busy', 'true');
     void loadTopic(topicId, true).then(render);
   }
+});
+
+// Clicking the empty space around a maximized stage leaves it.
+main.addEventListener('click', (event) => {
+  const watch = document.querySelector<HTMLElement>('.watch.is-max');
+  if (watch && event.target === watch) setMaximized(false);
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && document.querySelector('.watch.is-max')) setMaximized(false);
 });
 
 form.addEventListener('submit', (event) => {

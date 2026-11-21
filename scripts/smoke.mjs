@@ -35,6 +35,28 @@ await withBrowser(async (browser) => {
   const heading = await page.locator('.watch__title').innerText();
   check(heading === title, 'watch heading does not match the card title');
 
+  // maximize fills the window without covering the player, Escape restores the page
+  const before = await page.locator('.stage').boundingBox();
+  await page.getByRole('button', { name: 'Maximize' }).click();
+  check(
+    (await page.locator('.watch.is-max').count()) === 1,
+    'maximize did not expand the player',
+  );
+  check(
+    (await page.locator('.watch__title').isVisible()) === false,
+    'maximize left the page text visible',
+  );
+  const after = await page.locator('.stage').boundingBox();
+  check(
+    Boolean(before && after && after.width > before.width),
+    `maximized stage did not grow (${before?.width} -> ${after?.width})`,
+  );
+  await page.keyboard.press('Escape');
+  check(
+    (await page.locator('.watch.is-max').count()) === 0,
+    'Escape did not leave the maximized player',
+  );
+
   await page.goBack();
   await page.waitForURL(/topic=zoology/);
   const seen = await page.locator('.card.is-seen').count();

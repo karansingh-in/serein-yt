@@ -4,6 +4,7 @@ import type { Topic, Video } from '../api/filters';
 export type Limits = {
   perTopic: number;
   homeTotal: number;
+  searchResults: number;
   minDurationSec: number;
   cacheHours: number;
   manualRefreshMinutes: number;
@@ -60,8 +61,7 @@ async function request(params: Record<string, string>): Promise<TopicState> {
 export const fetchTopic = (topicId: string, refresh = false) =>
   request(refresh ? { topic: topicId, refresh: '1' } : { topic: topicId });
 
-export const fetchSearch = (topicId: string, text: string) =>
-  request({ topic: topicId, q: text });
+export const fetchSearch = (text: string) => request({ q: text });
 
 export function readOpened(): Set<string> {
   try {

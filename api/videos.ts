@@ -14,6 +14,7 @@ import type { Topic, Video } from './filters';
 type Limits = {
   perTopic: number;
   homeTotal: number;
+  searchResults: number;
   minDurationSec: number;
   cacheHours: number;
   manualRefreshMinutes: number;
@@ -65,12 +66,12 @@ async function call(endpoint: string, params: Record<string, string | number | u
 }
 
 /** One search.list (100 units) plus one videos.list (1 unit) for the topic. */
-async function fetchTopic(topic: Topic, text: string | undefined, limits: Limits): Promise<Video[]> {
+async function fetchTopic(topic: Topic, limits: Limits): Promise<Video[]> {
   const search = await call('search', {
     part: 'snippet',
     type: 'video',
     maxResults: 50,
-    q: text ? `${text} ${topic.query}` : topic.query,
+    q: topic.query,
     videoEmbeddable: 'true',
     videoSyndicated: 'true',
     safeSearch: 'moderate',
@@ -129,12 +130,65 @@ async function fetchTopic(topic: Topic, text: string | undefined, limits: Limits
   return kept;
 }
 
-function fixtureVideos(topic: Topic, text: string | undefined): Video[] {
+/** A raw YouTube search: relevance order, no channel or topic rules. */
+async function searchVideos(text: string, limits: Limits): Promise<Video[]> {
+  const search = await call('search', {
+    part: 'snippet',
+    type: 'video',
+    maxResults: limits.searchResults,
+    q: text,
+    videoEmbeddable: 'true',
+    safeSearch: 'none',
+    relevanceLanguage: 'en',
+    order: 'relevance',
+  });
+
+  const candidates: { id: string; snippet: any }[] = (search.items ?? [])
+    .map((item: any) => ({ id: item.id?.videoId, snippet: item.snippet }))
+    .filter((item: any) => Boolean(item.id));
+
+  if (candidates.length === 0) return [];
+
+  const details = await call('videos', {
+    part: 'snippet,contentDetails,status',
+    id: candidates.map((item) => item.id).join(','),
+  });
+  const byId = new Map<string, any>((details.items ?? []).map((item: any) => [item.id, item]));
+
+  const kept: Video[] = [];
+  for (const { id, snippet } of candidates) {
+    const detail = byId.get(id);
+    // Embeddable is playback, not content: every row has to play in this app.
+    if (!detail || detail.status?.embeddable === false) continue;
+    const info = detail.snippet ?? {};
+    kept.push({
+      id,
+      title: decodeEntities(info.title ?? snippet.title ?? ''),
+      channel: decodeEntities(info.channelTitle ?? snippet.channelTitle ?? ''),
+      durationSec: parseISODuration(detail.contentDetails?.duration ?? ''),
+      publishedAt: info.publishedAt ?? snippet.publishedAt ?? '',
+      description: decodeEntities(info.description ?? snippet.description ?? ''),
+      thumbnail: snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url ?? '',
+    });
+  }
+  return kept;
+}
+
+function fixtureVideos(topic: Topic | null, text: string | undefined): Video[] {
   const items = (fixtures.items as any[])
-    .filter((item) => item.topicIds.includes(topic.id))
+    .filter((item) => !topic || item.topicIds.includes(topic.id))
     .filter((item) => !text || hasPhrase(`${item.title}\n${item.channel}`, text))
     .map(({ topicIds: _ignored, ...video }) => video as Video);
-  return dedupe(items).slice(0, config.limits.perTopic);
+  return dedupe(items).slice(0, text ? config.limits.searchResults : config.limits.perTopic);
+}
+
+function fail(res: ServerResponse, error: unknown) {
+  console.error('videos', error);
+  // The daily search quota is a wait, not a fault; say so instead of "connection problem".
+  if (error instanceof UpstreamError && error.status === 429) {
+    return send(res, 503, { error: 'quota_exceeded' }, 'no-store');
+  }
+  return send(res, 502, { error: 'upstream_failed' }, 'no-store');
 }
 
 export default async function handler(req: Req, res: ServerResponse) {
@@ -150,6 +204,24 @@ export default async function handler(req: Req, res: ServerResponse) {
   const text = param('q')?.trim() || undefined;
   const refresh = param('refresh') === '1';
 
+  if (text) {
+    const cache = 'public, s-maxage=3600, stale-while-revalidate=86400';
+    if (!process.env.YT_KEY) {
+      return send(
+        res,
+        200,
+        { items: fixtureVideos(null, text), fetchedAt: Date.now(), source: 'fixtures' },
+        'no-store',
+      );
+    }
+    try {
+      const items = await searchVideos(text, config.limits);
+      return send(res, 200, { items, fetchedAt: Date.now(), source: 'api' }, cache);
+    } catch (error) {
+      return fail(res, error);
+    }
+  }
+
   const topic = config.topics.find((item) => item.id === topicId);
   if (!topic) return send(res, 400, { error: 'unknown_topic' }, 'no-store');
 
@@ -161,20 +233,15 @@ export default async function handler(req: Req, res: ServerResponse) {
     return send(
       res,
       200,
-      { items: fixtureVideos(topic, text), fetchedAt: Date.now(), source: 'fixtures' },
+      { items: fixtureVideos(topic, undefined), fetchedAt: Date.now(), source: 'fixtures' },
       'no-store',
     );
   }
 
   try {
-    const items = await fetchTopic(topic, text, config.limits);
+    const items = await fetchTopic(topic, config.limits);
     return send(res, 200, { items, fetchedAt: Date.now(), source: 'api' }, cache);
   } catch (error) {
-    console.error('videos', error);
-    // The daily search quota is a wait, not a fault; say so instead of "connection problem".
-    if (error instanceof UpstreamError && error.status === 429) {
-      return send(res, 503, { error: 'quota_exceeded' }, 'no-store');
-    }
-    return send(res, 502, { error: 'upstream_failed' }, 'no-store');
+    return fail(res, error);
   }
 }
