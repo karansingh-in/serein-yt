@@ -84,7 +84,7 @@ await withBrowser(async (browser) => {
   // community is one tab away and lists the subreddits
   await page.goto(BASE + '/community', { waitUntil: 'networkidle' });
   check(
-    (await page.locator('.community__link').count()) === 4,
+    (await page.locator('.community__link').count()) === 8,
     'community page is missing subreddit links',
   );
 

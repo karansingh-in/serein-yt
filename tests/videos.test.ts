@@ -34,6 +34,8 @@ const search = {
     { id: { videoId: 'offtopic' }, snippet: snippet('Cooking pasta at home') },
     { id: { videoId: 'unembeddable' }, snippet: snippet('Physics matrix tricks') },
     { id: { videoId: 'wrongchannel' }, snippet: snippet('Physics lecture from elsewhere', 'Some Other Channel') },
+    { id: { videoId: 'blocked' }, snippet: snippet('Bigg Boss 18 grand finale') },
+    { id: { videoId: 'blockedHindi' }, snippet: snippet('बिग बॉस आज का एपिसोड') },
   ],
 };
 
@@ -65,6 +67,18 @@ const details = {
       contentDetails: { duration: 'PT20M' },
       status: { embeddable: true, uploadStatus: 'processed' },
       snippet: { title: 'Physics lecture from elsewhere', description: 'Elsewhere.' },
+    },
+    {
+      id: 'blocked',
+      contentDetails: { duration: 'PT40M' },
+      status: { embeddable: true, uploadStatus: 'processed' },
+      snippet: { title: 'Bigg Boss 18 grand finale', description: 'Not for this app.' },
+    },
+    {
+      id: 'blockedHindi',
+      contentDetails: { duration: 'PT40M' },
+      status: { embeddable: true, uploadStatus: 'processed' },
+      snippet: { title: 'बिग बॉस आज का एपिसोड', description: 'Not for this app.' },
     },
   ],
 };

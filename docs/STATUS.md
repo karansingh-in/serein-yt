@@ -154,6 +154,17 @@ browser context** and requires rows, so the cold path stays fixed.
 - Checks: `typecheck` clean, `npm test` 22/22, `lint:design` passes, `smoke` passes
   (refresh, channel page, community), `shots` 42 files.
 
+## Community list, search blocklist, less empty (2026-11-22)
+
+- Community now lists NEETard, ASKNEET, Neet_India, MEDICOreTARDS, JEENEETards,
+  NEETdroppers2toppers, MBBSindia and MBBS_INDIA.
+- Search drops titles matching `config/app.json` → `blocked` (Bigg Boss / BB / Bhabhi Ji
+  and the Hindi spellings), whole-word and unicode-aware; tests cover English and Hindi.
+- Home has a page header now: title, count line, tabs, Refresh. Same header on Community.
+  Empty states got a title and a sentence, the feed closes on a hairline rule, and card
+  thumbnails ease up 3% on hover. No shadows or gradients.
+- Checks: typecheck clean, tests 22/22, lint:design passes, smoke passes, shots 42 files.
+
 ## Next
 1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.

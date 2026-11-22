@@ -2,26 +2,30 @@
   "appName": "Serein",
   "channels": ["Physics Wallah", "PW", "PW NEET", "Unacademy", "Competition Wallah"],
   "community": [
-    {
-      "label": "r/neetug",
-      "href": "https://www.reddit.com/r/neetug/",
-      "note": "NEET UG discussion, doubts and prep."
-    },
-    {
-      "label": "r/jeeneetards",
-      "href": "https://www.reddit.com/r/JEENEETards/",
-      "note": "JEE and NEET students, advice and memes."
-    },
-    {
-      "label": "r/neetards",
-      "href": "https://www.reddit.com/r/neetards/",
-      "note": "NEET aspirants helping each other."
-    },
-    {
-      "label": "r/neetprep",
-      "href": "https://www.reddit.com/r/neetprep/",
-      "note": "Preparation resources, tests and strategy."
-    }
+    { "label": "NEETard", "href": "https://www.reddit.com/r/NEETard/", "note": "NEET prep talk and daily discussion." },
+    { "label": "ASKNEET", "href": "https://www.reddit.com/r/ASKNEET/", "note": "Ask anything about NEET." },
+    { "label": "Neet_India", "href": "https://www.reddit.com/r/Neet_India/", "note": "NEET news, counselling and college talk." },
+    { "label": "MEDICOreTARDS", "href": "https://www.reddit.com/r/MEDICOreTARDS/", "note": "Medical students and NEET aspirants." },
+    { "label": "JEENEETards", "href": "https://www.reddit.com/r/JEENEETards/", "note": "JEE and NEET students together." },
+    { "label": "NEETdroppers2toppers", "href": "https://www.reddit.com/r/NEETdroppers2toppers/", "note": "Droppers supporting droppers." },
+    { "label": "MBBSindia", "href": "https://www.reddit.com/r/MBBSindia/", "note": "MBBS life and medical college questions." },
+    { "label": "MBBS_INDIA", "href": "https://www.reddit.com/r/MBBS_INDIA/", "note": "Doctors, students and medical careers." }
+  ],
+  "blocked": [
+    "big boss",
+    "bigg boss",
+    "bigboss",
+    "bb",
+    "bhabi",
+    "bhabhi",
+    "bhabi ji",
+    "bhabhi ji",
+    "भाभी",
+    "भाभी जी",
+    "भाबी",
+    "भाबी जी",
+    "बिग बॉस",
+    "बिगबॉस"
   ],
   "topics": [
     {

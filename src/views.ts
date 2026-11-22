@@ -81,6 +81,19 @@ function tabs(
   }>Community</a></nav>`;
 }
 
+function feedHead(title: string, sub: string, nav: string, action = '') {
+  return `<header class="feed-head">
+      <div class="feed-top">
+        <div>
+          <h1 class="feed-title">${esc(title)}</h1>
+          <p class="feed-sub">${esc(sub)}</p>
+        </div>
+        ${action}
+      </div>
+      ${nav}
+    </header>`;
+}
+
 export function home(state: State, activeId: string | null) {
   const topics = activeId ? app.topics.filter((t) => t.id === activeId) : app.topics;
   const known = topics.filter((topic) => state.store.has(topic.id));
@@ -115,17 +128,19 @@ export function home(state: State, activeId: string | null) {
     body = `<div class="grid"${state.fresh ? ' data-fresh' : ''}>${items
       .map((video) => card(video, state.opened))
       .join('')}</div>
-      <p class="end">That's everything on your topics.</p>`;
+      <p class="end">You're all caught up.</p>`;
   } else if (loading) {
     body = `<div class="grid" aria-busy="true">${skeletons(6)}</div>`;
   } else if (failed.length) {
     body = `<div class="empty">
-        <p>Couldn't load your topics.</p>
+        <p class="empty__title">Couldn't load your topics</p>
+        <p class="empty__note">The feed comes back as soon as the connection does.</p>
         <button class="link" type="button" data-action="refresh" data-topic="${failed[0].id}">Try again</button>
       </div>`;
   } else {
     body = `<div class="empty">
-        <p>Nothing new today.</p>
+        <p class="empty__title">Nothing new yet</p>
+        <p class="empty__note">New videos from your channels land here, newest first.</p>
         ${
           activeId && canRefresh(activeId)
             ? `<button class="link" type="button" data-action="refresh" data-topic="${activeId}">Refresh</button>`
@@ -134,11 +149,17 @@ export function home(state: State, activeId: string | null) {
       </div>`;
   }
 
+  const label = activeId
+    ? (app.topics.find((topic) => topic.id === activeId)?.label ?? 'Latest')
+    : 'Latest';
+
   return `<div class="view page">
-      <div class="feed-head">
-        ${tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'))}
-        <button class="btn btn--small" type="button" data-action="refresh-all">Refresh</button>
-      </div>
+      ${feedHead(
+        label,
+        items.length ? `${items.length} videos, newest first` : 'Newest videos from your channels',
+        tabs(activeId, (id) => (id ? `/?topic=${id}` : '/')),
+        '<button class="btn btn--small" type="button" data-action="refresh-all">Refresh</button>',
+      )}
       <p class="note" id="feed-note" role="status" hidden></p>
       ${notice}${offline}${sample}
       ${body}
@@ -189,12 +210,15 @@ export function channel(state: State, title: string, items: Video[], loading: bo
     ? `<div class="grid">${items.map((video) => card(video, state.opened)).join('')}</div>`
     : loading
       ? `<div class="grid" aria-busy="true">${skeletons(6)}</div>`
-      : `<div class="empty"><p>This channel has nothing to show.</p></div>`;
+      : `<div class="empty">
+          <p class="empty__title">Nothing here yet</p>
+          <p class="empty__note">This channel has no videos that can play in the app.</p>
+        </div>`;
 
   return `<div class="view page">
       <a class="back" href="/" data-link>Back</a>
       <h1 class="channel__title">${esc(title || 'Channel')}</h1>
-      <p class="search__count">${items.length ? `${items.length} videos` : ''}</p>
+      <p class="search__count">${items.length ? `${items.length} videos, newest first` : ''}</p>
       ${body}
     </div>`;
 }
@@ -203,16 +227,18 @@ export function community(activeId: string | null) {
   const links = app.community
     .map(
       (link) => `<a class="community__link" href="${esc(link.href)}" target="_blank" rel="noopener noreferrer">
-        <span class="community__name">${esc(link.label)}</span>
+        <span class="community__name">r/${esc(link.label)}</span>
         <span class="community__note">${esc(link.note)}</span>
       </a>`,
     )
     .join('');
 
   return `<div class="view page">
-      <div class="feed-head">${tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'), true)}</div>
-      <h1 class="channel__title">Community</h1>
-      <p class="search__count">Places to ask questions and compare notes.</p>
+      ${feedHead(
+        'Community',
+        'Places to ask questions and compare notes.',
+        tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'), true),
+      )}
       <div class="community">${links}</div>
     </div>`;
 }
@@ -256,7 +282,10 @@ export function search(state: State, view: SearchView) {
   let body: string;
 
   if (!view.query) {
-    body = `<div class="empty"><p>Search for a topic, chapter or channel.</p></div>`;
+    body = `<div class="empty">
+        <p class="empty__title">Search anything</p>
+        <p class="empty__note">Chapters, topics, channels. Results come straight from YouTube.</p>
+      </div>`;
   } else if (!web || web.loading) {
     count = 'Searching…';
     body = `<div class="rows" aria-busy="true">${skeletons}</div>`;
@@ -264,11 +293,11 @@ export function search(state: State, view: SearchView) {
     body = view.local.length
       ? `<p class="note" role="status">${failedText} Showing what's saved on your topics.</p>
         <div class="rows">${rows(view.local)}</div>`
-      : `<div class="empty"><p role="status">${failedText}</p></div>`;
+      : `<div class="empty"><p class="empty__title" role="status">Search is unavailable</p><p class="empty__note">${failedText}</p></div>`;
   } else if (web.items.length === 0) {
     body = `<div class="empty">
-        <p>No results for “${esc(view.query)}”.</p>
-        <p class="note">Try a shorter phrase, like “gravitation” instead of the full chapter name.</p>
+        <p class="empty__title">No results for “${esc(view.query)}”</p>
+        <p class="empty__note">Try a shorter phrase, like “gravitation” instead of the full chapter name.</p>
       </div>`;
   } else {
     count = `${web.items.length} ${web.items.length === 1 ? 'video' : 'videos'}`;

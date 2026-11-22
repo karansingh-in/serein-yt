@@ -23,6 +23,7 @@ type Limits = {
 const config = appConfig as unknown as {
   appName: string;
   channels: string[];
+  blocked?: string[];
   topics: Topic[];
   limits: Limits;
 };
@@ -165,9 +166,12 @@ async function searchVideos(text: string, limits: Limits): Promise<Video[]> {
     // Embeddable is playback, not content: every row has to play in this app.
     if (!detail || detail.status?.embeddable === false) continue;
     const info = detail.snippet ?? {};
+    const title = decodeEntities(info.title ?? snippet.title ?? '');
+    // Reality-show noise stays out of search, in English and Hindi.
+    if ((config.blocked ?? []).some((phrase) => hasPhrase(title, phrase))) continue;
     kept.push({
       id,
-      title: decodeEntities(info.title ?? snippet.title ?? ''),
+      title,
       channel: decodeEntities(info.channelTitle ?? snippet.channelTitle ?? ''),
       channelId: info.channelId ?? snippet.channelId ?? '',
       durationSec: parseISODuration(detail.contentDetails?.duration ?? ''),
