@@ -12,7 +12,9 @@ const sizes = [
 const screens = [
   ['home', '/'],
   ['watch', '/watch/fixture-01'],
+  ['channel', '/channel/fixture-example-academy'],
   ['search', '/search?q=photosynthesis'],
+  ['community', '/community'],
   ['settings', '/settings'],
 ];
 

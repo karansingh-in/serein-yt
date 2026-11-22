@@ -117,6 +117,7 @@ async function fetchTopic(topic: Topic, limits: Limits): Promise<Video[]> {
       id,
       title: decodeEntities(info.title ?? snippet.title ?? ''),
       channel: decodeEntities(info.channelTitle ?? snippet.channelTitle ?? ''),
+      channelId: info.channelId ?? snippet.channelId ?? '',
       durationSec,
       publishedAt: info.publishedAt ?? snippet.publishedAt ?? '',
       // search.list truncates the description; videos.list has the whole one.
@@ -168,6 +169,7 @@ async function searchVideos(text: string, limits: Limits): Promise<Video[]> {
       id,
       title: decodeEntities(info.title ?? snippet.title ?? ''),
       channel: decodeEntities(info.channelTitle ?? snippet.channelTitle ?? ''),
+      channelId: info.channelId ?? snippet.channelId ?? '',
       durationSec: parseISODuration(detail.contentDetails?.duration ?? ''),
       publishedAt: info.publishedAt ?? snippet.publishedAt ?? '',
       description: decodeEntities(info.description ?? snippet.description ?? ''),
@@ -177,12 +179,76 @@ async function searchVideos(text: string, limits: Limits): Promise<Video[]> {
   return kept;
 }
 
+const channelSlug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+/** A whole channel, newest first, with no topic or channel rules. */
+async function fetchChannel(id: string): Promise<{ title: string; items: Video[] } | null> {
+  const info = await call('channels', { part: 'snippet,contentDetails', id });
+  const channel = (info.items ?? [])[0];
+  if (!channel) return null;
+
+  const title = decodeEntities(channel.snippet?.title ?? '');
+  const uploads = channel.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploads) return { title, items: [] };
+
+  const list = await call('playlistItems', {
+    part: 'contentDetails',
+    playlistId: uploads,
+    maxResults: 30,
+  });
+  const ids: string[] = (list.items ?? [])
+    .map((item: any) => item.contentDetails?.videoId)
+    .filter(Boolean);
+  if (ids.length === 0) return { title, items: [] };
+
+  const details = await call('videos', {
+    part: 'snippet,contentDetails,status',
+    id: ids.join(','),
+  });
+  const byId = new Map<string, any>((details.items ?? []).map((item: any) => [item.id, item]));
+
+  const items: Video[] = [];
+  for (const videoId of ids) {
+    const detail = byId.get(videoId);
+    if (!detail || detail.status?.embeddable === false) continue;
+    const snippet = detail.snippet ?? {};
+    items.push({
+      id: videoId,
+      title: decodeEntities(snippet.title ?? ''),
+      channel: decodeEntities(snippet.channelTitle ?? title),
+      channelId: snippet.channelId ?? id,
+      durationSec: parseISODuration(detail.contentDetails?.duration ?? ''),
+      publishedAt: snippet.publishedAt ?? '',
+      description: decodeEntities(snippet.description ?? ''),
+      thumbnail:
+        snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url ?? '',
+    });
+  }
+  return { title, items };
+}
+
 function fixtureVideos(topic: Topic | null, text: string | undefined): Video[] {
   const items = (fixtures.items as any[])
     .filter((item) => !topic || item.topicIds.includes(topic.id))
     .filter((item) => !text || hasPhrase(`${item.title}\n${item.channel}`, text))
-    .map(({ topicIds: _ignored, ...video }) => video as Video);
+    .map((item) => {
+      const { topicIds: _ignored, ...video } = item;
+      return {
+        ...video,
+        channelId: item.channelId ?? `fixture-${channelSlug(item.channel)}`,
+      } as Video;
+    });
   return dedupe(items).slice(0, text ? config.limits.searchResults : config.limits.perTopic);
+}
+
+function fixtureChannel(id: string): { title: string; items: Video[] } | null {
+  const items = fixtureVideos(null, undefined).filter((video) => video.channelId === id);
+  if (items.length === 0) return null;
+  return { title: items[0].channel, items };
 }
 
 function fail(res: ServerResponse, error: unknown) {
@@ -204,8 +270,27 @@ export default async function handler(req: Req, res: ServerResponse) {
   };
 
   const topicId = param('topic');
+  const channelId = param('channel');
   const text = param('q')?.trim() || undefined;
   const refresh = param('refresh') === '1';
+
+  if (channelId) {
+    const cache = 'public, s-maxage=3600, stale-while-revalidate=86400';
+    if (!process.env.YT_KEY) {
+      const found = fixtureChannel(channelId);
+      return found
+        ? send(res, 200, { ...found, fetchedAt: Date.now(), source: 'fixtures' }, 'no-store')
+        : send(res, 404, { error: 'unknown_channel' }, 'no-store');
+    }
+    try {
+      const found = await fetchChannel(channelId);
+      return found
+        ? send(res, 200, { ...found, fetchedAt: Date.now(), source: 'api' }, cache)
+        : send(res, 404, { error: 'unknown_channel' }, 'no-store');
+    } catch (error) {
+      return fail(res, error);
+    }
+  }
 
   if (text) {
     const cache = 'public, s-maxage=3600, stale-while-revalidate=86400';

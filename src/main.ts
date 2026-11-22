@@ -3,6 +3,7 @@ import type { Video } from '../api/filters';
 import {
   app,
   canRefresh,
+  fetchChannel,
   fetchSearch,
   fetchTopic,
   isStale,
@@ -14,7 +15,7 @@ import {
   setTheme,
   writeCache,
 } from './api';
-import type { ThemeChoice } from './api';
+import type { ChannelState, ThemeChoice } from './api';
 import * as views from './views';
 
 const main = document.getElementById('main') as HTMLElement;
@@ -34,12 +35,10 @@ try {
   state.fresh = true;
 }
 
-for (const topic of app.topics) {
-  const cached = readCache(topic.id);
-  if (cached) state.store.set(topic.id, cached);
-}
-
 let generation = 0;
+// Videos seen from any source (topics, search, a channel) so a click always plays.
+const known = new Map<string, Video>();
+const channels = new Map<string, ChannelState>();
 let webSearch: {
   key: string;
   items: Video[];
@@ -47,7 +46,21 @@ let webSearch: {
   failed: false | 'quota' | 'other';
 } | null = null;
 
+function remember(items: Video[]) {
+  for (const video of items) known.set(video.id, video);
+}
+
+for (const topic of app.topics) {
+  const cached = readCache(topic.id);
+  if (cached) {
+    state.store.set(topic.id, cached);
+    remember(cached.items);
+  }
+}
+
 function findVideo(id: string) {
+  const direct = known.get(id);
+  if (direct) return direct;
   for (const entry of state.store.values()) {
     const found = entry.items.find((video) => video.id === id);
     if (found) return found;
@@ -74,6 +87,7 @@ async function loadTopic(topicId: string, refresh = false) {
   try {
     const result = await fetchTopic(topicId, refresh);
     state.store.set(topicId, result);
+    remember(result.items);
     writeCache(topicId, result);
   } catch {
     const previous = state.store.get(topicId);
@@ -166,6 +180,7 @@ function renderSearch(gen: number, url: URL) {
       .then((result) => {
         if (webSearch?.key === query) {
           webSearch = { key: query, items: result.items, loading: false, failed: false };
+          remember(result.items);
         }
       })
       .catch((error: unknown) => {
@@ -185,6 +200,26 @@ function renderSearch(gen: number, url: URL) {
   }
 
   paint();
+}
+
+async function renderChannel(gen: number, id: string) {
+  const cached = channels.get(id);
+  main.innerHTML = views.channel(state, cached?.title ?? '', cached?.items ?? [], !cached);
+  if (cached) return;
+
+  try {
+    const data = await fetchChannel(id);
+    channels.set(id, data);
+    remember(data.items);
+    if (gen !== generation) return;
+    main.innerHTML = views.channel(state, data.title, data.items, false);
+  } catch {
+    if (gen !== generation) return;
+    main.innerHTML = `<div class="view page">
+      <a class="back" href="/" data-link>Back</a>
+      <div class="empty"><p>Couldn't open this channel.</p></div>
+    </div>`;
+  }
 }
 
 function setMaximized(on: boolean) {
@@ -217,8 +252,19 @@ function render() {
     return;
   }
 
+  if (path.startsWith('/channel/')) {
+    void renderChannel(gen, decodeURIComponent(path.slice('/channel/'.length)));
+    return;
+  }
+
   if (path === '/search') {
     void renderSearch(gen, url);
+    return;
+  }
+
+  if (path === '/community') {
+    main.innerHTML = views.community(url.searchParams.get('topic'));
+    revealActiveTab();
     return;
   }
 
@@ -271,6 +317,26 @@ main.addEventListener('click', (event) => {
     const clamped = description.classList.toggle('is-clamped');
     target.textContent = clamped ? 'More' : 'Less';
     target.setAttribute('aria-expanded', String(!clamped));
+    return;
+  }
+
+  if (action === 'refresh-all') {
+    const url = new URL(location.href);
+    const activeId = url.pathname === '/' ? url.searchParams.get('topic') : null;
+    const ids = activeId ? [activeId] : app.topics.map((topic) => topic.id);
+    const allowed = ids.filter(canRefresh);
+    const note = document.getElementById('feed-note');
+    if (allowed.length === 0) {
+      if (note) {
+        note.hidden = false;
+        note.textContent = 'Refreshed in the last hour. Try again later.';
+      }
+      return;
+    }
+    target.setAttribute('aria-busy', 'true');
+    target.textContent = 'Refreshing…';
+    allowed.forEach(markRefresh);
+    void Promise.all(allowed.map((id) => loadTopic(id, true))).then(render);
     return;
   }
 

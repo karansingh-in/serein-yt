@@ -62,6 +62,32 @@ await withBrowser(async (browser) => {
   const seen = await page.locator('.card.is-seen').count();
   check(seen > 0, 'opened video was not dimmed in the feed');
 
+  // the feed refresh button re-reads the topics and keeps the grid
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await page.waitForTimeout(500);
+  check(
+    (await page.locator('.card').count()) > 0,
+    'refresh emptied the feed',
+  );
+
+  // a channel name opens that channel, unfiltered
+  await page.locator('.card').first().click();
+  await page.waitForURL(/\/watch\//);
+  const channelHref = await page.locator('.watch__channel').getAttribute('href');
+  check(Boolean(channelHref), 'watch screen has no channel link');
+  await page.goto(BASE + channelHref);
+  check(
+    (await page.locator('.card').count()) > 0,
+    'channel page showed no videos',
+  );
+
+  // community is one tab away and lists the subreddits
+  await page.goto(BASE + '/community', { waitUntil: 'networkidle' });
+  check(
+    (await page.locator('.community__link').count()) === 4,
+    'community page is missing subreddit links',
+  );
+
   await page.goto(BASE + '/settings', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Dark' }).click();
   check(

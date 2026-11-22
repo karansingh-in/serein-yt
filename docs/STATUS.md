@@ -140,6 +140,20 @@ browser context** and requires rows, so the cold path stays fixed.
 - Checks: `typecheck` clean, `npm test` 21/21, `lint:design` passes, `smoke` passes
   (incl. cold `/search` and maximize), `shots` 30 files.
 
+## Channels, community, wider layout (2026-11-22)
+
+- Channel names on the watch screen link to `/channel/:id`, an in-app page of that
+  channel's newest uploads with no filters beyond "can it play". Verified live.
+- Home has a Refresh button next to the tabs; it refreshes the current topic or all
+  topics, with the 60-minute cooldown and an honest message when it is not time yet.
+- Community tab lists r/neetug, r/jeeneetards, r/neetards and r/neetprep.
+- Layout: wordmark left, search centred, settings right; page max 1600px, 40px side
+  padding, 4 columns at 1400px+. Search, channel and community pages use the same shell.
+- Fixed a boot crash: the cache loop called `remember()` before `known` was initialised,
+  which broke every page load once localStorage had a cached topic.
+- Checks: `typecheck` clean, `npm test` 22/22, `lint:design` passes, `smoke` passes
+  (refresh, channel page, community), `shots` 42 files.
+
 ## Next
 1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.

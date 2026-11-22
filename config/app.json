@@ -1,6 +1,28 @@
 {
   "appName": "Serein",
   "channels": ["Physics Wallah", "PW", "PW NEET", "Unacademy", "Competition Wallah"],
+  "community": [
+    {
+      "label": "r/neetug",
+      "href": "https://www.reddit.com/r/neetug/",
+      "note": "NEET UG discussion, doubts and prep."
+    },
+    {
+      "label": "r/jeeneetards",
+      "href": "https://www.reddit.com/r/JEENEETards/",
+      "note": "JEE and NEET students, advice and memes."
+    },
+    {
+      "label": "r/neetards",
+      "href": "https://www.reddit.com/r/neetards/",
+      "note": "NEET aspirants helping each other."
+    },
+    {
+      "label": "r/neetprep",
+      "href": "https://www.reddit.com/r/neetprep/",
+      "note": "Preparation resources, tests and strategy."
+    }
+  ],
   "topics": [
     {
       "id": "physics",

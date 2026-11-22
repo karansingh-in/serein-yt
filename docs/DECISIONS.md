@@ -37,3 +37,11 @@ Record every dependency, deviation from SPEC.md, and adjusted design token, with
 - **The search screen no longer has topic tabs or a web-search link.** Reason: those only made sense when search was limited to a topic.
 - **The feed is capped to the last two years and sorted newest first.** Reason: every card was 4-7 years old. `publishedAfter` is computed as `now - 730 days`, and the kept list is sorted by `publishedAt` before `perTopic` is applied. Relevance order is kept in the request so the pool stays full; the sort then puts the newest of that pool first. Measured after the change: physics 15, zoology 18, botany 18, oldest April 2025.
 - **Settings moved to the far right of the bar** (`margin-left: auto`). Reason: the search well is capped at 540px, so the link used to sit mid-bar.
+
+## Channels, community and a wider feed (2026-11-22)
+
+- **Channel names are links** (`/channel/:id`). The page reads the channel's uploads playlist (`channels.list` + `playlistItems.list` + `videos.list`, 3 units), newest first, with no channel allowlist, topic rules or duration filter; only unplayable videos are dropped. Verified live after deploy.
+- **Every fetched video is kept in a memory map** (`known`), so a video opened from search or a channel page always plays instead of "isn't in your topics".
+- **Feed refresh button** in the tab row. It refreshes the visible topic, or all topics on All, and respects the existing 60-minute cooldown per topic; when everything is on cooldown it says so instead of pretending. A full refresh is six `search.list` calls (600 units).
+- **Community tab** next to the subjects, linking r/neetug, r/jeeneetards, r/neetards and r/neetprep in a new tab. Links live in `config/app.json` → `community`.
+- **Layout widened to YouTube's shape**: bar is a 3-column grid (wordmark left, search centred at up to 620px, settings right), page max width 1600px with 40px side padding, grid gaps tightened to 44/24, and a fourth column at 1400px+. No shadows or gradients were added.

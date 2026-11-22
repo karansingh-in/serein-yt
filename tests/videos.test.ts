@@ -152,6 +152,74 @@ describe('videos handler', () => {
     expect(url).not.toContain('videoCategoryId');
   });
 
+  it('opens a channel unfiltered, newest first', async () => {
+    process.env.YT_KEY = 'test';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: URL) => {
+        const href = String(url);
+        if (href.includes('/channels?')) {
+          return {
+            ok: true,
+            json: async () => ({
+              items: [
+                {
+                  snippet: { title: 'Physics Wallah' },
+                  contentDetails: { relatedPlaylists: { uploads: 'UU1' } },
+                },
+              ],
+            }),
+          };
+        }
+        if (href.includes('/playlistItems?')) {
+          return {
+            ok: true,
+            json: async () => ({
+              items: [
+                { contentDetails: { videoId: 'a' } },
+                { contentDetails: { videoId: 'b' } },
+              ],
+            }),
+          };
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            items: [
+              {
+                id: 'a',
+                contentDetails: { duration: 'PT10M' },
+                status: { embeddable: true },
+                snippet: {
+                  title: 'Any topic at all',
+                  channelTitle: 'Physics Wallah',
+                  channelId: 'UC1',
+                  publishedAt: '2026-11-20T00:00:00Z',
+                  description: 'Short.',
+                  thumbnails: {},
+                },
+              },
+              {
+                id: 'b',
+                contentDetails: { duration: 'PT10M' },
+                status: { embeddable: false },
+                snippet: { title: 'Cannot embed', channelTitle: 'Physics Wallah', channelId: 'UC1' },
+              },
+            ],
+          }),
+        };
+      }),
+    );
+
+    const res = fakeResponse();
+    await handler(request({ channel: 'UC1' }) as never, res as never);
+
+    const body = JSON.parse(res.body);
+    expect(body.title).toBe('Physics Wallah');
+    expect(body.items.map((item: { id: string }) => item.id)).toEqual(['a']);
+    expect(body.items[0].channelId).toBe('UC1');
+  });
+
   it('serves fixtures when no key is set', async () => {
     delete process.env.YT_KEY;
 

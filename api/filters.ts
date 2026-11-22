@@ -14,6 +14,7 @@ export type Video = {
   id: string;
   title: string;
   channel: string;
+  channelId: string;
   durationSec: number;
   publishedAt: string;
   description: string;

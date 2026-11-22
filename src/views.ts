@@ -64,15 +64,21 @@ const skeletons = (count: number) =>
     </div>`,
   ).join('');
 
-function tabs(activeId: string | null, href: (id: string | null) => string) {
+function tabs(
+  activeId: string | null,
+  href: (id: string | null) => string,
+  community = false,
+) {
   const items = [{ id: null, label: 'All' }, ...app.topics.map((t) => ({ id: t.id, label: t.label }))];
-  return `<nav class="tabs" aria-label="Topics">${items
+  return `<nav class="tabs" aria-label="Sections">${items
     .map(
       (item) => `<a class="tab" href="${href(item.id)}" data-link${
-        activeId === item.id ? ' aria-current="page"' : ''
+        !community && activeId === item.id ? ' aria-current="page"' : ''
       }>${esc(item.label)}</a>`,
     )
-    .join('')}</nav>`;
+    .join('')}<a class="tab" href="/community" data-link${
+    community ? ' aria-current="page"' : ''
+  }>Community</a></nav>`;
 }
 
 export function home(state: State, activeId: string | null) {
@@ -129,7 +135,11 @@ export function home(state: State, activeId: string | null) {
   }
 
   return `<div class="view page">
-      ${tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'))}
+      <div class="feed-head">
+        ${tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'))}
+        <button class="btn btn--small" type="button" data-action="refresh-all">Refresh</button>
+      </div>
+      <p class="note" id="feed-note" role="status" hidden></p>
       ${notice}${offline}${sample}
       ${body}
     </div>`;
@@ -149,6 +159,10 @@ export function watch(video: Video | null, notFound: boolean) {
     `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.id)}` +
     '?rel=0&iv_load_policy=3&playsinline=1';
   const long = video.description.length > 220;
+  const channel = video.channelId
+    ? `<a class="watch__channel" href="/channel/${encodeURIComponent(video.channelId)}" data-link>${esc(video.channel)}</a>`
+    : esc(video.channel);
+  const rest = [minutes(video.durationSec), ago(video.publishedAt)].filter(Boolean).join(', ');
 
   return `<div class="view watch" id="watch">
       <a class="back" href="/" data-link>Back</a>
@@ -162,11 +176,44 @@ export function watch(video: Video | null, notFound: boolean) {
       </div>
       <h1 class="watch__title">${esc(video.title)}</h1>
       <div class="watch__actions">
-        <p class="watch__meta">${esc(metaLine(video))}</p>
+        <p class="watch__meta">${channel} <span aria-hidden="true">·</span> ${esc(rest)}</p>
         <button class="btn" type="button" data-action="maximize" aria-pressed="false">Maximize</button>
       </div>
       <p class="watch__desc${long ? ' is-clamped' : ''}" id="description">${esc(video.description)}</p>
       ${long ? '<button class="link" type="button" data-action="expand" aria-expanded="false">More</button>' : ''}
+    </div>`;
+}
+
+export function channel(state: State, title: string, items: Video[], loading: boolean) {
+  const body = items.length
+    ? `<div class="grid">${items.map((video) => card(video, state.opened)).join('')}</div>`
+    : loading
+      ? `<div class="grid" aria-busy="true">${skeletons(6)}</div>`
+      : `<div class="empty"><p>This channel has nothing to show.</p></div>`;
+
+  return `<div class="view page">
+      <a class="back" href="/" data-link>Back</a>
+      <h1 class="channel__title">${esc(title || 'Channel')}</h1>
+      <p class="search__count">${items.length ? `${items.length} videos` : ''}</p>
+      ${body}
+    </div>`;
+}
+
+export function community(activeId: string | null) {
+  const links = app.community
+    .map(
+      (link) => `<a class="community__link" href="${esc(link.href)}" target="_blank" rel="noopener noreferrer">
+        <span class="community__name">${esc(link.label)}</span>
+        <span class="community__note">${esc(link.note)}</span>
+      </a>`,
+    )
+    .join('');
+
+  return `<div class="view page">
+      <div class="feed-head">${tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'), true)}</div>
+      <h1 class="channel__title">Community</h1>
+      <p class="search__count">Places to ask questions and compare notes.</p>
+      <div class="community">${links}</div>
     </div>`;
 }
 

@@ -13,6 +13,7 @@ export type Limits = {
 export const app = appConfig as unknown as {
   appName: string;
   topics: Topic[];
+  community: CommunityLink[];
   limits: Limits;
 };
 
@@ -22,6 +23,10 @@ export type TopicState = {
   source: 'api' | 'fixtures';
   error?: boolean;
 };
+
+export type ChannelState = TopicState & { title: string };
+
+export type CommunityLink = { label: string; href: string; note: string };
 
 const CACHE = 'serein:v1:';
 const OPENED = 'serein:opened';
@@ -62,6 +67,9 @@ export const fetchTopic = (topicId: string, refresh = false) =>
   request(refresh ? { topic: topicId, refresh: '1' } : { topic: topicId });
 
 export const fetchSearch = (text: string) => request({ q: text });
+
+export const fetchChannel = (id: string) =>
+  request({ channel: id }) as Promise<ChannelState>;
 
 export function readOpened(): Set<string> {
   try {
