@@ -132,6 +132,7 @@ img {
 }
 
 .bar__link {
+  margin-left: auto;
   font-size: 14px;
   color: var(--text-2);
   text-decoration: none;
@@ -623,6 +624,21 @@ html.is-locked {
 }
 
 /* search rows */
+
+.search__title {
+  margin: 4px 0 0;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.search__count {
+  margin: 8px 0 36px;
+  font-size: 13px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
 
 .rows {
   display: flex;

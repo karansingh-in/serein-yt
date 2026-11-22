@@ -77,10 +77,10 @@ await withBrowser(async (browser) => {
   await page.goto(BASE + '/search?q=photosynthesis', { waitUntil: 'networkidle' });
   check(
     (await page.locator('.row').count()) > 0,
-    'search found no local results for "photosynthesis"',
+    'search found no results for "photosynthesis"',
   );
 
-  // a cold visit straight to /search must load the topics itself, not say "Nothing found"
+  // a cold visit straight to /search must query the API itself, not rely on the home feed
   const coldSearch = await browser.newContext({ viewport: { width: 1180, height: 820 } });
   const deep = await coldSearch.newPage();
   await deep.goto(BASE + '/search?q=photosynthesis', { waitUntil: 'networkidle' });
@@ -89,13 +89,13 @@ await withBrowser(async (browser) => {
     .catch(() => {});
   check(
     (await deep.locator('.row').count()) > 0,
-    'cold /search found no local results for "photosynthesis"',
+    'cold /search found no results for "photosynthesis"',
   );
   await coldSearch.close();
 
   await page.goto(BASE + '/search?q=zzzz', { waitUntil: 'networkidle' });
   const empty = await page.locator('.empty').innerText();
-  check(empty.includes('Nothing found'), `empty search state missing: ${empty}`);
+  check(empty.includes('No results'), `empty search state missing: ${empty}`);
 
   // the API failing on a cold start must produce the error state, not a blank page
   const cold = await browser.newContext({ viewport: { width: 1180, height: 820 } });

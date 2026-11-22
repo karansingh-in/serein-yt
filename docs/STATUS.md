@@ -124,6 +124,22 @@ midnight Pacific." rather than blaming the connection. Test pins the 503.
 Regression cover: `npm run smoke` now opens `/search?q=photosynthesis` in a **fresh
 browser context** and requires rows, so the cold path stays fixed.
 
+## Redesign and real search (2026-11-22)
+
+- Redesign shipped: 64px bar, 48px tabs with a sliding underline, 2/3-column grid with
+  18px titles, 34px watch title, 16px description at 72ch, 300px search rows, 40px
+  settings headings, tracked uppercase section labels. Maximize (theater) button on the
+  watch screen: top bar, 16:9 stage below it, Escape/backdrop/button to leave; the player
+  UI is untouched.
+- Search now sends the typed text straight to YouTube and shows the results as they are,
+  with no channel or topic filter and no topic tabs. Verified live: `?q=gravitation`
+  returned 20 `"source":"api"` items, relevance order.
+- Feed recency: `publishedAfter` = now − 2 years and newest-first sort. Verified live:
+  physics 15, zoology 18, botany 18; oldest April 2025, newest November 2026.
+- Settings sits at the far right of the bar at every width.
+- Checks: `typecheck` clean, `npm test` 21/21, `lint:design` passes, `smoke` passes
+  (incl. cold `/search` and maximize), `shots` 30 files.
+
 ## Next
 1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.

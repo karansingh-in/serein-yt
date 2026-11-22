@@ -296,10 +296,7 @@ document.addEventListener('keydown', (event) => {
 form.addEventListener('submit', (event) => {
   event.preventDefault();
   const query = input.value.trim();
-  const here = new URL(location.href);
-  const topic = here.pathname === '/search' ? here.searchParams.get('topic') : null;
-  const keep = topic ? `&topic=${encodeURIComponent(topic)}` : '';
-  navigate(query ? `/search?q=${encodeURIComponent(query)}${keep}` : '/search');
+  navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
 });
 
 window.addEventListener('popstate', render);

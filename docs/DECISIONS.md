@@ -30,3 +30,10 @@ Record every dependency, deviation from SPEC.md, and adjusted design token, with
 - **Tests live in `tests/`, not `api/`.** Reason: Vercel turns every file in `api/` into a public function, including test files.
 - **The search screen loads the topics it needs.** Reason: local search can only read cached topics, so a cold deep link had nothing to search and said "Nothing found". Cost: a cold `/search` can trigger the same six topic fetches as home; they are CDN-cached.
 - **Quota exhaustion answers `503 quota_exceeded`, not `502`.** Reason: Google's 429 is a wait, not a fault; the client can say so instead of blaming the connection.
+
+## Search and feed changes (2026-11-22)
+
+- **Search is a raw YouTube search** (`?q=`), not a local or topic-scoped one. Reason: the owner searched "gravitation" and got nothing, because search only looked inside the cached NEET topics. Now `api/videos.ts` calls `search.list` with the typed text, no channel/topic rules and `safeSearch=none`, then only drops videos that cannot play in the embed. Trade-off: search can return anything, including non-study videos; that was the owner's explicit call. Cost: one `search.list` per new query, cached for an hour at the CDN.
+- **The search screen no longer has topic tabs or a web-search link.** Reason: those only made sense when search was limited to a topic.
+- **The feed is capped to the last two years and sorted newest first.** Reason: every card was 4-7 years old. `publishedAfter` is computed as `now - 730 days`, and the kept list is sorted by `publishedAt` before `perTopic` is applied. Relevance order is kept in the request so the pool stays full; the sort then puts the newest of that pool first. Measured after the change: physics 15, zoology 18, botany 18, oldest April 2025.
+- **Settings moved to the far right of the bar** (`margin-left: auto`). Reason: the search well is capped at 540px, so the link used to sit mid-bar.

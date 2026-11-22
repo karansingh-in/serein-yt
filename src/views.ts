@@ -172,10 +172,8 @@ export function watch(video: Video | null, notFound: boolean) {
 
 export type SearchView = {
   query: string;
-  activeId: string | null;
   local: Video[];
   web: { items: Video[]; loading: boolean; failed: false | 'quota' | 'other' } | null;
-  loading: boolean;
 };
 
 export function search(state: State, view: SearchView) {
@@ -193,43 +191,46 @@ export function search(state: State, view: SearchView) {
       )
       .join('');
 
-  const webHref = `/search?q=${encodeURIComponent(view.query)}&topic=${view.activeId}&web=1`;
+  const skeletons = Array.from(
+    { length: 4 },
+    () => `<div class="row" aria-hidden="true">
+      <div class="thumb row__thumb skeleton"></div>
+      <div class="row__body"><div class="line skeleton"></div><div class="line line--short skeleton"></div></div>
+    </div>`,
+  ).join('');
 
+  const web = view.web;
+  const failedText =
+    web?.failed === 'quota'
+      ? 'The daily search quota is used up. It resets at midnight Pacific.'
+      : "Couldn't reach search. Check the connection and try again.";
+
+  let count = '';
   let body: string;
+
   if (!view.query) {
-    body = `<div class="empty"><p>Type above to search your topics.</p></div>`;
-  } else if (view.local.length === 0 && !view.web) {
-    body = view.loading
-      ? `<div class="empty"><p aria-busy="true">Searching your topics…</p></div>`
-      : `<div class="empty">
-        <p>Nothing found in your topics.</p>
-        ${view.activeId ? `<a class="link" href="${webHref}" data-link>Search this topic on the web</a>` : ''}
+    body = `<div class="empty"><p>Search for a topic, chapter or channel.</p></div>`;
+  } else if (!web || web.loading) {
+    count = 'Searching…';
+    body = `<div class="rows" aria-busy="true">${skeletons}</div>`;
+  } else if (web.failed) {
+    body = view.local.length
+      ? `<p class="note" role="status">${failedText} Showing what's saved on your topics.</p>
+        <div class="rows">${rows(view.local)}</div>`
+      : `<div class="empty"><p role="status">${failedText}</p></div>`;
+  } else if (web.items.length === 0) {
+    body = `<div class="empty">
+        <p>No results for “${esc(view.query)}”.</p>
+        <p class="note">Try a shorter phrase, like “gravitation” instead of the full chapter name.</p>
       </div>`;
   } else {
-    body = `<div class="rows">${rows(view.local)}</div>`;
-    if (view.web) {
-      if (view.web.loading) {
-        body += `<p class="note" aria-busy="true">Searching the web…</p>`;
-      } else if (view.web.failed) {
-        body += `<p class="note" role="status">${
-          view.web.failed === 'quota'
-            ? 'The daily search quota is used up. It resets at midnight Pacific.'
-            : "Couldn't search the web. Check the connection and try again."
-        }</p>`;
-      } else if (view.web.items.length) {
-        body += `<h2 class="section-label">From the web</h2><div class="rows">${rows(view.web.items)}</div>`;
-      } else {
-        body += `<p class="note">Nothing else found for this topic.</p>`;
-      }
-    } else if (view.activeId) {
-      body += `<p class="end"><a class="link" href="${webHref}" data-link>Search this topic on the web</a></p>`;
-    }
+    count = `${web.items.length} ${web.items.length === 1 ? 'video' : 'videos'}`;
+    body = `<div class="rows">${rows(web.items)}</div>`;
   }
 
   return `<div class="view page">
-      ${tabs(view.activeId, (id) =>
-        `/search?q=${encodeURIComponent(view.query)}${id ? `&topic=${id}` : ''}`,
-      )}
+      ${view.query ? `<h1 class="search__title">${esc(view.query)}</h1>` : ''}
+      ${count ? `<p class="search__count" role="status">${count}</p>` : ''}
       ${body}
     </div>`;
 }

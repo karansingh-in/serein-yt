@@ -60,6 +60,12 @@ const details = {
       contentDetails: { duration: 'PT20M' },
       status: { embeddable: false, uploadStatus: 'processed' },
     },
+    {
+      id: 'wrongchannel',
+      contentDetails: { duration: 'PT20M' },
+      status: { embeddable: true, uploadStatus: 'processed' },
+      snippet: { title: 'Physics lecture from elsewhere', description: 'Elsewhere.' },
+    },
   ],
 };
 
@@ -114,6 +120,36 @@ describe('videos handler', () => {
     expect(res.statusCode).toBe(503);
     expect(JSON.parse(res.body).error).toBe('quota_exceeded');
     quiet.mockRestore();
+  });
+
+  it('searches YouTube as-is, without the topic filters', async () => {
+    process.env.YT_KEY = 'test';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: URL) => ({
+        ok: true,
+        json: async () => (String(url).includes('/youtube/v3/search?') ? search : details),
+      })),
+    );
+
+    const res = fakeResponse();
+    await handler(request({ q: 'gravitation' }) as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    // Short, off-topic and off-channel results stay: search matches YouTube, only playback is checked.
+    expect(body.items.map((item: { id: string }) => item.id)).toEqual([
+      'keep',
+      'short',
+      'offtopic',
+      'wrongchannel',
+    ]);
+
+    const url = String(
+      (globalThis.fetch as unknown as { mock: { calls: [URL][] } }).mock.calls[0][0],
+    );
+    expect(url).toContain('q=gravitation');
+    expect(url).not.toContain('videoCategoryId');
   });
 
   it('serves fixtures when no key is set', async () => {

@@ -79,6 +79,8 @@ async function fetchTopic(topic: Topic, limits: Limits): Promise<Video[]> {
     videoCategoryId: topic.categoryId,
     videoDuration: topic.duration && topic.duration !== 'any' ? topic.duration : undefined,
     order: topic.order,
+    // Keep the feed current: nothing older than two years gets in.
+    publishedAfter: new Date(Date.now() - 730 * 86_400_000).toISOString(),
   });
 
   const candidates: { id: string; snippet: any }[] = (search.items ?? [])
@@ -124,10 +126,11 @@ async function fetchTopic(topic: Topic, limits: Limits): Promise<Video[]> {
 
     if (!matchesRules(video, topic.include, topic.exclude)) continue;
     kept.push(video);
-    if (kept.length >= limits.perTopic) break;
   }
 
-  return kept;
+  // Newest first inside the recent window, so the feed never feels stale.
+  kept.sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+  return kept.slice(0, limits.perTopic);
 }
 
 /** A raw YouTube search: relevance order, no channel or topic rules. */
