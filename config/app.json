@@ -1,6 +1,14 @@
 {
   "appName": "Serein",
-  "channels": ["Physics Wallah", "PW", "PW NEET", "Unacademy", "Competition Wallah"],
+  "channels": [
+    "Physics Wallah",
+    "PW",
+    "PW NEET",
+    "Unacademy",
+    "Competition Wallah",
+    "Simpli5yre",
+    "Beats for Biology"
+  ],
   "exam": { "label": "NEET UG", "date": "2027-05-03" },
   "resources": [
     { "label": "NEET Archive", "href": "https://neetarchive.in/", "note": "Books, papers and resources." },
