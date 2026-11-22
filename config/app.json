@@ -1,6 +1,13 @@
 {
   "appName": "Serein",
   "channels": ["Physics Wallah", "PW", "PW NEET", "Unacademy", "Competition Wallah"],
+  "exam": { "label": "NEET UG", "date": "2027-05-03" },
+  "resources": [
+    { "label": "NEET Archive", "href": "https://neetarchive.in/", "note": "Books, papers and resources." },
+    { "label": "MEGA folder 1", "href": "https://mega.nz/folder/YKdiDTBZ#5tvgbvrUYUWkPr_qBlw-Zg", "note": "Books and study material." },
+    { "label": "MEGA folder 2", "href": "https://mega.nz/folder/fXgiWK7Z#A4a_b5kK44lg-119cEa6LQ", "note": "More books and study material." },
+    { "label": "Google Drive folder", "href": "https://drive.google.com/drive/folders/1JYvfu-yXxMJcx5ShdnD-0rIf9PXKdliE", "note": "Shared study material." }
+  ],
   "community": [
     { "label": "NEETard", "href": "https://www.reddit.com/r/NEETard/", "note": "NEET prep talk and daily discussion." },
     { "label": "ASKNEET", "href": "https://www.reddit.com/r/ASKNEET/", "note": "Ask anything about NEET." },

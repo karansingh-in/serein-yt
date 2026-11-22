@@ -9,7 +9,9 @@ import {
   isStale,
   markOpened,
   markRefresh,
+  markWatched,
   readCache,
+  readHistory,
   readOpened,
   readTheme,
   setTheme,
@@ -22,6 +24,34 @@ const main = document.getElementById('main') as HTMLElement;
 const bar = document.getElementById('bar') as HTMLElement;
 const form = document.getElementById('search-form') as HTMLFormElement;
 const input = document.getElementById('q') as HTMLInputElement;
+const countdown = document.getElementById('countdown');
+const themeToggle = document.getElementById('theme-toggle');
+
+function updateCountdown() {
+  if (!countdown) return;
+  const target = Date.parse(`${app.exam.date}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((target - today.getTime()) / 86_400_000);
+  countdown.hidden = days < 0;
+  if (days < 0) return;
+  countdown.innerHTML =
+    days === 0
+      ? `${app.exam.label} · <strong>today</strong>`
+      : `${app.exam.label} · <strong>${days} days</strong>`;
+}
+
+function paintThemeToggle() {
+  if (!themeToggle) return;
+  const dark = document.documentElement.dataset.theme === 'dark';
+  themeToggle.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+}
+
+themeToggle?.addEventListener('click', () => {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  setTheme(dark ? 'light' : 'dark');
+  paintThemeToggle();
+});
 
 const state: views.State = {
   store: new Map(),
@@ -149,6 +179,7 @@ async function renderWatch(gen: number, id: string) {
   if (video) {
     markOpened(id);
     state.opened.add(id);
+    markWatched(video);
     return;
   }
 
@@ -159,6 +190,7 @@ async function renderWatch(gen: number, id: string) {
   if (video) {
     markOpened(id);
     state.opened.add(id);
+    markWatched(video);
   }
 }
 
@@ -238,6 +270,7 @@ function setMaximized(on: boolean) {
 function render() {
   const gen = ++generation;
   document.documentElement.classList.remove('is-locked');
+  updateCountdown();
   const url = new URL(location.href);
   const path = url.pathname;
   input.value = path === '/search' ? (url.searchParams.get('q') ?? '') : '';
@@ -264,6 +297,18 @@ function render() {
 
   if (path === '/community') {
     main.innerHTML = views.community(url.searchParams.get('topic'));
+    revealActiveTab();
+    return;
+  }
+
+  if (path === '/resources') {
+    main.innerHTML = views.resources(url.searchParams.get('topic'));
+    revealActiveTab();
+    return;
+  }
+
+  if (path === '/history') {
+    main.innerHTML = views.history(state, readHistory(), url.searchParams.get('topic'));
     revealActiveTab();
     return;
   }
@@ -373,12 +418,16 @@ const onScroll = () => bar.classList.toggle('is-stuck', window.scrollY > 0);
 window.addEventListener('scroll', onScroll, { passive: true });
 
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if (readTheme() === 'auto') setTheme('auto');
+  if (readTheme() === 'auto') {
+    setTheme('auto');
+    paintThemeToggle();
+  }
 });
 
 document.title = app.appName;
 const wordmark = document.querySelector('.wordmark');
 if (wordmark) wordmark.textContent = app.appName;
 
+paintThemeToggle();
 onScroll();
 render();

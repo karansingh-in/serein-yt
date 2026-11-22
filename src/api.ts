@@ -14,6 +14,8 @@ export const app = appConfig as unknown as {
   appName: string;
   topics: Topic[];
   community: CommunityLink[];
+  resources: CommunityLink[];
+  exam: { label: string; date: string };
   limits: Limits;
 };
 
@@ -28,9 +30,12 @@ export type ChannelState = TopicState & { title: string };
 
 export type CommunityLink = { label: string; href: string; note: string };
 
+export type HistoryEntry = { video: Video; watchedAt: number };
+
 const CACHE = 'serein:v1:';
 const OPENED = 'serein:opened';
 const REFRESH = 'serein:refresh:';
+const HISTORY = 'serein:history';
 
 export function readCache(topicId: string): TopicState | null {
   try {
@@ -85,6 +90,27 @@ export function markOpened(id: string) {
     localStorage.setItem(OPENED, JSON.stringify(ids));
   } catch {
     // ignore
+  }
+}
+
+export function readHistory(): HistoryEntry[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(HISTORY) ?? '[]');
+    return Array.isArray(raw) ? (raw as HistoryEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function markWatched(video: Video) {
+  try {
+    const rest = readHistory().filter((entry) => entry.video.id !== video.id);
+    localStorage.setItem(
+      HISTORY,
+      JSON.stringify([{ video, watchedAt: Date.now() }, ...rest].slice(0, 60)),
+    );
+  } catch {
+    // storage full or blocked
   }
 }
 

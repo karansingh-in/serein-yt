@@ -1,7 +1,7 @@
 import { interleave } from '../api/filters';
 import type { Video } from '../api/filters';
 import { app, canRefresh, readTheme } from './api';
-import type { TopicState } from './api';
+import type { CommunityLink, HistoryEntry, TopicState } from './api';
 
 export type State = {
   store: Map<string, TopicState>;
@@ -67,18 +67,46 @@ const skeletons = (count: number) =>
 function tabs(
   activeId: string | null,
   href: (id: string | null) => string,
-  community = false,
+  section?: 'community' | 'resources' | 'history',
 ) {
   const items = [{ id: null, label: 'All' }, ...app.topics.map((t) => ({ id: t.id, label: t.label }))];
+  const link = (path: string, label: string, id: string) =>
+    `<a class="tab" href="${path}" data-link${
+      section === id ? ' aria-current="page"' : ''
+    }>${label}</a>`;
   return `<nav class="tabs" aria-label="Sections">${items
     .map(
       (item) => `<a class="tab" href="${href(item.id)}" data-link${
-        !community && activeId === item.id ? ' aria-current="page"' : ''
+        !section && activeId === item.id ? ' aria-current="page"' : ''
       }>${esc(item.label)}</a>`,
     )
-    .join('')}<a class="tab" href="/community" data-link${
-    community ? ' aria-current="page"' : ''
-  }>Community</a></nav>`;
+    .join('')}<span class="tab-sep" aria-hidden="true">|</span>${link('/community', 'Community', 'community')}${link('/resources', 'Resources', 'resources')}${link('/history', 'History', 'history')}</nav>`;
+}
+
+function linkList(links: CommunityLink[], prefix = '') {
+  return links
+    .map(
+      (link) => `<a class="community__link" href="${esc(link.href)}" target="_blank" rel="noopener noreferrer">
+        <span class="community__name">${esc(prefix + link.label)}</span>
+        <span class="community__note">${esc(link.note)}</span>
+      </a>`,
+    )
+    .join('');
+}
+
+function rowList(items: Video[], opened: Set<string>) {
+  return items
+    .map(
+      (video) => `<a class="row${opened.has(video.id) ? ' is-seen' : ''}" href="/watch/${video.id}" data-link>
+        <div class="thumb row__thumb"><img src="${esc(video.thumbnail)}" alt="" width="640" height="360" loading="lazy" decoding="async"></div>
+        <div class="row__body">
+          <h2 class="row__title">${esc(video.title)}</h2>
+          <p class="card__meta">${esc(metaLine(video))}</p>
+          <p class="row__desc">${esc(video.description)}</p>
+        </div>
+      </a>`,
+    )
+    .join('');
 }
 
 function feedHead(title: string, sub: string, nav: string, action = '') {
@@ -224,22 +252,43 @@ export function channel(state: State, title: string, items: Video[], loading: bo
 }
 
 export function community(activeId: string | null) {
-  const links = app.community
-    .map(
-      (link) => `<a class="community__link" href="${esc(link.href)}" target="_blank" rel="noopener noreferrer">
-        <span class="community__name">r/${esc(link.label)}</span>
-        <span class="community__note">${esc(link.note)}</span>
-      </a>`,
-    )
-    .join('');
-
   return `<div class="view page">
       ${feedHead(
         'Community',
         'Places to ask questions and compare notes.',
-        tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'), true),
+        tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'), 'community'),
       )}
-      <div class="community">${links}</div>
+      <div class="community">${linkList(app.community, 'r/')}</div>
+    </div>`;
+}
+
+export function resources(activeId: string | null) {
+  return `<div class="view page">
+      ${feedHead(
+        'Resources',
+        'Books, papers and shared folders.',
+        tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'), 'resources'),
+      )}
+      <div class="community">${linkList(app.resources)}</div>
+    </div>`;
+}
+
+export function history(state: State, entries: HistoryEntry[], activeId: string | null) {
+  const items = entries.map((entry) => entry.video);
+  const body = items.length
+    ? `<div class="rows">${rowList(items, state.opened)}</div>`
+    : `<div class="empty">
+        <p class="empty__title">Nothing watched yet</p>
+        <p class="empty__note">Videos you open show up here, newest first.</p>
+      </div>`;
+
+  return `<div class="view page">
+      ${feedHead(
+        'History',
+        items.length ? `${items.length} videos, newest first` : 'Videos you opened',
+        tabs(activeId, (id) => (id ? `/?topic=${id}` : '/'), 'history'),
+      )}
+      ${body}
     </div>`;
 }
 
@@ -250,19 +299,7 @@ export type SearchView = {
 };
 
 export function search(state: State, view: SearchView) {
-  const rows = (items: Video[]) =>
-    items
-      .map(
-        (video) => `<a class="row${state.opened.has(video.id) ? ' is-seen' : ''}" href="/watch/${video.id}" data-link>
-        <div class="thumb row__thumb"><img src="${esc(video.thumbnail)}" alt="" width="640" height="360" loading="lazy" decoding="async"></div>
-        <div class="row__body">
-          <h2 class="row__title">${esc(video.title)}</h2>
-          <p class="card__meta">${esc(metaLine(video))}</p>
-          <p class="row__desc">${esc(video.description)}</p>
-        </div>
-      </a>`,
-      )
-      .join('');
+  const rows = (items: Video[]) => rowList(items, state.opened);
 
   const skeletons = Array.from(
     { length: 4 },

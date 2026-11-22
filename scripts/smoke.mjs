@@ -88,6 +88,31 @@ await withBrowser(async (browser) => {
     'community page is missing subreddit links',
   );
 
+  await page.goto(BASE + '/resources', { waitUntil: 'networkidle' });
+  check(
+    (await page.locator('.community__link').count()) === 4,
+    'resources page is missing links',
+  );
+
+  await page.goto(BASE + '/history', { waitUntil: 'networkidle' });
+  check(
+    (await page.locator('.row').count()) > 0,
+    'history did not remember the watched video',
+  );
+
+  check(
+    /\d/.test(await page.locator('#countdown').innerText()),
+    'exam countdown is missing',
+  );
+
+  // the bar toggle switches theme and the bar no longer links to settings
+  const themeBefore = await page.locator('html').getAttribute('data-theme');
+  await page.locator('#theme-toggle').click();
+  check(
+    (await page.locator('html').getAttribute('data-theme')) !== themeBefore,
+    'bar theme toggle did not switch the theme',
+  );
+
   await page.goto(BASE + '/settings', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Dark' }).click();
   check(

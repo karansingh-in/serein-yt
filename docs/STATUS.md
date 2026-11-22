@@ -165,6 +165,17 @@ browser context** and requires rows, so the cold path stays fixed.
   thumbnails ease up 3% on hover. No shadows or gradients.
 - Checks: typecheck clean, tests 22/22, lint:design passes, smoke passes, shots 42 files.
 
+## Exam timer, resources, history, bar toggle (2026-11-22)
+
+- Settings link replaced by a sun/moon toggle in the bar; the `/settings` route still
+  exists but is no longer linked.
+- NEET UG countdown in the bar, computed from `config/app.json` → `exam` (`2027-05-03`,
+  which is 162 days from today). Recalculated on every render, so it is correct daily.
+- Tabs now read subjects | Community · Resources · History. Resources lists the four
+  links; History lists opened videos from `localStorage` (60 max, newest first).
+- Checks: typecheck clean, tests 22/22, lint:design passes, smoke passes (toggle,
+  resources, history, countdown), shots 54 files.
+
 ## Next
 1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.

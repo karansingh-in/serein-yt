@@ -15,6 +15,8 @@ const screens = [
   ['channel', '/channel/fixture-example-academy'],
   ['search', '/search?q=photosynthesis'],
   ['community', '/community'],
+  ['resources', '/resources'],
+  ['history', '/history'],
   ['settings', '/settings'],
 ];
 
