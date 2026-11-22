@@ -36,6 +36,8 @@ const search = {
     { id: { videoId: 'wrongchannel' }, snippet: snippet('Physics lecture from elsewhere', 'Some Other Channel') },
     { id: { videoId: 'blocked' }, snippet: snippet('Bigg Boss 18 grand finale') },
     { id: { videoId: 'blockedHindi' }, snippet: snippet('बिग बॉस आज का एपिसोड') },
+    { id: { videoId: 'blockedHashtag' }, snippet: snippet('#BBMS8ViralCuts') },
+    { id: { videoId: 'blockedDoubleG' }, snippet: snippet('Biggboss Malayalam troll video') },
   ],
 };
 
@@ -79,6 +81,18 @@ const details = {
       contentDetails: { duration: 'PT40M' },
       status: { embeddable: true, uploadStatus: 'processed' },
       snippet: { title: 'बिग बॉस आज का एपिसोड', description: 'Not for this app.' },
+    },
+    {
+      id: 'blockedHashtag',
+      contentDetails: { duration: 'PT40M' },
+      status: { embeddable: true, uploadStatus: 'processed' },
+      snippet: { title: '#BBMS8ViralCuts', description: 'Not for this app.' },
+    },
+    {
+      id: 'blockedDoubleG',
+      contentDetails: { duration: 'PT40M' },
+      status: { embeddable: true, uploadStatus: 'processed' },
+      snippet: { title: 'Biggboss Malayalam troll video', description: 'Not for this app.' },
     },
   ],
 };

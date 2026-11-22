@@ -6,6 +6,7 @@ import {
   decodeEntities,
   dedupe,
   hasPhrase,
+  hasPrefix,
   matchesRules,
   parseISODuration,
 } from './filters.js';
@@ -168,7 +169,11 @@ async function searchVideos(text: string, limits: Limits): Promise<Video[]> {
     const info = detail.snippet ?? {};
     const title = decodeEntities(info.title ?? snippet.title ?? '');
     // Reality-show noise stays out of search, in English and Hindi.
-    if ((config.blocked ?? []).some((phrase) => hasPhrase(title, phrase))) continue;
+    const blocked = config.blocked ?? [];
+    const noise = blocked.some((phrase) =>
+      phrase.length <= 2 ? hasPrefix(title, phrase) : hasPhrase(title, phrase),
+    );
+    if (noise) continue;
     kept.push({
       id,
       title,

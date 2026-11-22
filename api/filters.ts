@@ -64,6 +64,12 @@ export function hasPhrase(haystack: string, phrase: string): boolean {
   return re.test(haystack);
 }
 
+/** A short marker like "bb" blocks any word that starts with it (#BBMS, BiggBoss). */
+export function hasPrefix(haystack: string, prefix: string): boolean {
+  if (!prefix) return false;
+  return new RegExp(`(^|[^\\p{L}\\p{N}])${escape(prefix)}`, 'iu').test(haystack);
+}
+
 export function matchesRules(
   video: Pick<Video, 'title' | 'channel'>,
   include: string[] = [],
