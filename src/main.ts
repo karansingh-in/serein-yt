@@ -425,7 +425,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 });
 
 document.title = app.appName;
-const wordmark = document.querySelector('.wordmark');
+const wordmark = document.querySelector('.wordmark__text');
 if (wordmark) wordmark.textContent = app.appName;
 
 paintThemeToggle();

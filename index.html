@@ -7,6 +7,7 @@
     <meta name="description" content="Videos from the topics you chose. Nothing else." />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
     <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
     <meta name="theme-color" content="#F5F4F0" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0F0F0E" media="(prefers-color-scheme: dark)" />
@@ -21,7 +22,10 @@
 
     <header class="bar" id="bar">
       <div class="bar__inner">
-        <a class="wordmark" href="/" data-link>Serein</a>
+        <a class="wordmark" href="/" data-link>
+          <img class="wordmark__leaf" src="/logo.svg" alt="" width="26" height="26" />
+          <span class="wordmark__text">Serein</span>
+        </a>
         <form class="search" role="search" id="search-form" action="/search">
           <svg class="search__icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.5" />
