@@ -176,6 +176,16 @@ browser context** and requires rows, so the cold path stays fixed.
 - Checks: typecheck clean, tests 22/22, lint:design passes, smoke passes (toggle,
   resources, history, countdown), shots 54 files.
 
+## Leaf logo (2026-11-23)
+
+- Red leaf with white slits and a stem, drawn as `public/logo.svg` (vector, transparent),
+  shown left of the wordmark in the bar. Used as the favicon and redrawn into the four PWA
+  icons on the app background.
+- The owner's attached reference was not readable from disk, so the mark is a hand-built
+  vector recreation of it. If the original file is dropped at `public/logo-source.png`, the
+  icons can be regenerated from it in one step.
+- Checks: typecheck clean, tests 22/22, lint:design passes, smoke passes, shots regenerated.
+
 ## Next
 1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.
