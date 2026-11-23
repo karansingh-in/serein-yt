@@ -260,6 +260,33 @@ function fixtureChannel(id: string): { title: string; items: Video[] } | null {
   return { title: items[0].channel, items };
 }
 
+/** One videos.list call (1 unit) for a single id, so a deep link always plays. */
+async function fetchOne(id: string): Promise<Video | null> {
+  const details = await call('videos', {
+    part: 'snippet,contentDetails,status',
+    id,
+  });
+  const detail = (details.items ?? [])[0];
+  if (!detail || detail.status?.embeddable === false) return null;
+  const info = detail.snippet ?? {};
+  const title = decodeEntities(info.title ?? '');
+  const blocked = config.blocked ?? [];
+  const noise = blocked.some((phrase) =>
+    phrase.length <= 2 ? hasPrefix(title, phrase) : hasPhrase(title, phrase),
+  );
+  if (noise) return null;
+  return {
+    id,
+    title,
+    channel: decodeEntities(info.channelTitle ?? ''),
+    channelId: info.channelId ?? '',
+    durationSec: parseISODuration(detail.contentDetails?.duration ?? ''),
+    publishedAt: info.publishedAt ?? '',
+    description: decodeEntities(info.description ?? ''),
+    thumbnail: info.thumbnails?.high?.url ?? info.thumbnails?.medium?.url ?? '',
+  };
+}
+
 function fail(res: ServerResponse, error: unknown) {
   console.error('videos', error);
   // The daily search quota is a wait, not a fault; say so instead of "connection problem".
@@ -280,8 +307,27 @@ export default async function handler(req: Req, res: ServerResponse) {
 
   const topicId = param('topic');
   const channelId = param('channel');
+  const videoId = param('v');
   const text = param('q')?.trim() || undefined;
   const refresh = param('refresh') === '1';
+
+  if (videoId) {
+    const cache = 'public, s-maxage=86400, stale-while-revalidate=604800';
+    if (!process.env.YT_KEY) {
+      const found = fixtureVideos(null, undefined).find((video) => video.id === videoId);
+      return found
+        ? send(res, 200, { items: [found], fetchedAt: Date.now(), source: 'fixtures' }, 'no-store')
+        : send(res, 404, { error: 'unknown_video' }, 'no-store');
+    }
+    try {
+      const found = await fetchOne(videoId);
+      return found
+        ? send(res, 200, { items: [found], fetchedAt: Date.now(), source: 'api' }, cache)
+        : send(res, 404, { error: 'unknown_video' }, 'no-store');
+    } catch (error) {
+      return fail(res, error);
+    }
+  }
 
   if (channelId) {
     const cache = 'public, s-maxage=3600, stale-while-revalidate=86400';

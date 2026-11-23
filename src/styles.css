@@ -352,7 +352,9 @@ img {
   color: var(--text-2);
   text-decoration: none;
   white-space: nowrap;
-  transition: color 150ms var(--ease);
+  transition:
+    color 150ms var(--ease),
+    background-color 200ms var(--ease);
 }
 
 .tab:hover {
@@ -402,11 +404,18 @@ img {
 .card {
   display: block;
   text-decoration: none;
-  transition: opacity 120ms var(--ease);
+  transition:
+    transform 220ms var(--ease),
+    opacity 120ms var(--ease);
+}
+
+.card:hover {
+  transform: translateY(-2px);
 }
 
 .card:active {
   opacity: 0.7;
+  transform: none;
 }
 
 .thumb {

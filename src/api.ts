@@ -77,6 +77,8 @@ export const fetchSearch = (text: string, sort: 'relevance' | 'newest' = 'releva
 export const fetchChannel = (id: string) =>
   request({ channel: id }) as Promise<ChannelState>;
 
+export const fetchVideo = (id: string) => request({ v: id });
+
 export function readOpened(): Set<string> {
   try {
     return new Set<string>(JSON.parse(localStorage.getItem(OPENED) ?? '[]'));

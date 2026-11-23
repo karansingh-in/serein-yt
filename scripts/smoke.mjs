@@ -131,6 +131,19 @@ await withBrowser(async (browser) => {
     'search found no results for "photosynthesis"',
   );
 
+  // a deep link to a video that is not in the topic cache still plays
+  const deepWatch = await browser.newContext({ viewport: { width: 1180, height: 820 } });
+  const deepPage = await deepWatch.newPage();
+  await deepPage.goto(BASE + '/watch/fixture-02', { waitUntil: 'networkidle' });
+  await deepPage
+    .waitForFunction(() => Boolean(document.querySelector('.watch__title')), null, { timeout: 5000 })
+    .catch(() => {});
+  check(
+    (await deepPage.locator('.watch__title').count()) > 0,
+    'a deep-linked video that is not in the topic cache did not load',
+  );
+  await deepWatch.close();
+
   // sorting by newest is one control away and keeps results
   await page.getByRole('link', { name: 'Newest' }).click();
   await page.waitForURL(/sort=newest/);

@@ -6,6 +6,7 @@ import {
   fetchChannel,
   fetchSearch,
   fetchTopic,
+  fetchVideo,
   isStale,
   markOpened,
   markRefresh,
@@ -176,16 +177,18 @@ async function renderWatch(gen: number, id: string) {
   let video = findVideo(id);
   main.innerHTML = views.watch(video ?? null, false);
 
-  if (video) {
-    markOpened(id);
-    state.opened.add(id);
-    markWatched(video);
-    return;
+  if (!video) {
+    // Deep link or reload: ask for this one video (1 unit) instead of every topic.
+    try {
+      const result = await fetchVideo(id);
+      video = result.items[0] ?? undefined;
+      if (video) remember([video]);
+    } catch {
+      video = undefined;
+    }
+    if (gen !== generation) return;
   }
 
-  await Promise.all(app.topics.map((topic) => loadTopic(topic.id)));
-  if (gen !== generation) return;
-  video = findVideo(id);
   main.innerHTML = views.watch(video ?? null, true);
   if (video) {
     markOpened(id);

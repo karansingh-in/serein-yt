@@ -198,6 +198,16 @@ browser context** and requires rows, so the cold path stays fixed.
 - Checks: typecheck clean, tests 22/22, lint:design passes, smoke passes (sort, continue
   watching, daily line), shots regenerated.
 
+## Watch deep links fixed (2026-11-23)
+
+- The watch screen asked for **every topic** (6 searches, 600 units) to resolve one id, then
+  gave up, so a video opened from search, a channel page, or a reload showed
+  "isn't in your topics" even when it was fine. It now asks for that one video
+  (`/api/videos?v=<id>`, one `videos.list`, 1 unit) and only says "This video can't play
+  here" when the API returns nothing: removed, private, unembeddable, or blocked.
+- Smoke covers a deep link that is not in the topic cache.
+- Motion polish: tabs cross-fade their pill, cards lift 2px on hover. No shadows or gradients.
+
 ## Next
 1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.

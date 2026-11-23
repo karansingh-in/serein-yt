@@ -228,7 +228,12 @@ export function watch(video: Video | null, notFound: boolean) {
     return `<div class="view page">
         <a class="back" href="/" data-link>Back</a>
         <div class="empty">
-          <p>${notFound ? "This video isn't in your topics." : 'Loading…'}</p>
+          <p class="empty__title">${notFound ? "This video can't play here" : 'Loading…'}</p>
+          ${
+            notFound
+              ? '<p class="empty__note">It was removed, made private, or is blocked for this app.</p>'
+              : ''
+          }
         </div>
       </div>`;
   }
