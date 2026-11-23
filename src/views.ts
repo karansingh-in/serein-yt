@@ -109,12 +109,31 @@ function rowList(items: Video[], opened: Set<string>) {
     .join('');
 }
 
-function feedHead(title: string, sub: string, nav: string, action = '') {
+// One quiet line a day, so the page has a pulse without a feed of news.
+const DAILY = [
+  'One lecture at a time.',
+  'Revision beats rereading.',
+  "Today's 30 minutes still count.",
+  'Understand it once, revisit it often.',
+  'Slow is smooth, smooth is fast.',
+  'Write it down, then say it out loud.',
+  'Finish this chapter before starting the next.',
+  'Rest is part of the plan.',
+  'Small steps, every single day.',
+  'The hard part is starting. Start.',
+];
+
+const dailyLine = () => DAILY[Math.floor(Date.now() / 86_400_000) % DAILY.length];
+
+function feedHead(title: string, sub: string, nav: string, action = '', line = '') {
   return `<header class="feed-head">
       <div class="feed-top">
         <div>
           <h1 class="feed-title">${esc(title)}</h1>
-          <p class="feed-sub">${esc(sub)}</p>
+          <div class="feed-subrow">
+            <p class="feed-sub">${esc(sub)}</p>
+            ${line ? `<p class="feed-line">${esc(line)}</p>` : ''}
+          </div>
         </div>
         ${action}
       </div>
@@ -122,7 +141,7 @@ function feedHead(title: string, sub: string, nav: string, action = '') {
     </header>`;
 }
 
-export function home(state: State, activeId: string | null) {
+export function home(state: State, activeId: string | null, history: HistoryEntry[]) {
   const topics = activeId ? app.topics.filter((t) => t.id === activeId) : app.topics;
   const known = topics.filter((topic) => state.store.has(topic.id));
   const loading = known.length < topics.length;
@@ -181,15 +200,25 @@ export function home(state: State, activeId: string | null) {
     ? (app.topics.find((topic) => topic.id === activeId)?.label ?? 'Latest')
     : 'Latest';
 
+  const recent = activeId ? [] : history.slice(0, 3);
+  const resume = recent.length
+    ? `<section class="continue">
+        <h2 class="section-label">Continue watching</h2>
+        <div class="grid">${recent.map((entry) => card(entry.video, state.opened)).join('')}</div>
+      </section>`
+    : '';
+
   return `<div class="view page">
       ${feedHead(
         label,
         items.length ? `${items.length} videos, newest first` : 'Newest videos from your channels',
         tabs(activeId, (id) => (id ? `/?topic=${id}` : '/')),
         '<button class="btn btn--small" type="button" data-action="refresh-all">Refresh</button>',
+        dailyLine(),
       )}
       <p class="note" id="feed-note" role="status" hidden></p>
       ${notice}${offline}${sample}
+      ${resume}
       ${body}
     </div>`;
 }
@@ -292,8 +321,11 @@ export function history(state: State, entries: HistoryEntry[], activeId: string 
     </div>`;
 }
 
+export type SearchSort = 'relevance' | 'newest';
+
 export type SearchView = {
   query: string;
+  sort: SearchSort;
   local: Video[];
   web: { items: Video[]; loading: boolean; failed: false | 'quota' | 'other' } | null;
 };
@@ -341,8 +373,33 @@ export function search(state: State, view: SearchView) {
     body = `<div class="rows">${rows(web.items)}</div>`;
   }
 
+  const sortControl = view.query
+    ? `<div class="segmented" role="group" aria-label="Sort results">
+        ${(
+          [
+            ['relevance', 'Relevance'],
+            ['newest', 'Newest'],
+          ] as [SearchSort, string][]
+        )
+          .map(
+            ([id, label]) =>
+              `<a class="seg" href="/search?q=${encodeURIComponent(view.query)}${
+                id === 'newest' ? '&sort=newest' : ''
+              }" data-link${view.sort === id ? ' aria-current="page"' : ''}>${label}</a>`,
+          )
+          .join('')}
+      </div>`
+    : '';
+
   return `<div class="view page">
-      ${view.query ? `<h1 class="search__title">${esc(view.query)}</h1>` : ''}
+      ${
+        view.query
+          ? `<div class="search-head">
+        <h1 class="search__title">${esc(view.query)}</h1>
+        ${sortControl}
+      </div>`
+          : ''
+      }
       ${count ? `<p class="search__count" role="status">${count}</p>` : ''}
       ${body}
     </div>`;

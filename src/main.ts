@@ -155,7 +155,7 @@ async function renderHome(gen: number, activeId: string | null) {
 
   const paint = () => {
     if (gen !== generation) return;
-    main.innerHTML = views.home(state, activeId);
+    main.innerHTML = views.home(state, activeId, readHistory());
     if (main.querySelector('.grid')) consumeFresh();
     revealActiveTab();
   };
@@ -196,29 +196,32 @@ async function renderWatch(gen: number, id: string) {
 
 function renderSearch(gen: number, url: URL) {
   const query = (url.searchParams.get('q') ?? '').trim();
+  const sort: views.SearchSort = url.searchParams.get('sort') === 'newest' ? 'newest' : 'relevance';
+  const key = `${sort}\n${query}`;
 
   const paint = () => {
     if (gen !== generation) return;
     main.innerHTML = views.search(state, {
       query,
+      sort,
       local: query ? localSearch(query) : [],
-      web: webSearch && webSearch.key === query ? webSearch : null,
+      web: webSearch && webSearch.key === key ? webSearch : null,
     });
   };
 
-  if (query && (!webSearch || webSearch.key !== query)) {
-    webSearch = { key: query, items: [], loading: true, failed: false };
-    fetchSearch(query)
+  if (query && (!webSearch || webSearch.key !== key)) {
+    webSearch = { key, items: [], loading: true, failed: false };
+    fetchSearch(query, sort)
       .then((result) => {
-        if (webSearch?.key === query) {
-          webSearch = { key: query, items: result.items, loading: false, failed: false };
+        if (webSearch?.key === key) {
+          webSearch = { key, items: result.items, loading: false, failed: false };
           remember(result.items);
         }
       })
       .catch((error: unknown) => {
-        if (webSearch?.key === query) {
+        if (webSearch?.key === key) {
           webSearch = {
-            key: query,
+            key,
             items: [],
             loading: false,
             failed:

@@ -186,6 +186,18 @@ browser context** and requires rows, so the cold path stays fixed.
   icons can be regenerated from it in one step.
 - Checks: typecheck clean, tests 22/22, lint:design passes, smoke passes, shots regenerated.
 
+## Apple-shaped UI, resume, daily line, search sort (2026-11-23)
+
+- Home shows a **Continue watching** row (up to 3, from history) above the feed, on All only.
+- One quiet line a day under the page title, picked by date from a 10-line list in `views.ts`.
+- Search has a **Relevance / Newest** segmented control (`?sort=newest` → YouTube `order=date`),
+  and the in-memory search cache key includes the sort.
+- UI restyled toward Apple: segmented pill tabs, pill buttons and search field, 40px page
+  titles, grouped-list Community/Resources with chevrons, hairline blocks, 16px body text,
+  wider spacing. No shadows or gradients, so `lint:design` still passes unchanged.
+- Checks: typecheck clean, tests 22/22, lint:design passes, smoke passes (sort, continue
+  watching, daily line), shots regenerated.
+
 ## Next
 1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.

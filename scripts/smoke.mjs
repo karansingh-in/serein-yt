@@ -131,6 +131,25 @@ await withBrowser(async (browser) => {
     'search found no results for "photosynthesis"',
   );
 
+  // sorting by newest is one control away and keeps results
+  await page.getByRole('link', { name: 'Newest' }).click();
+  await page.waitForURL(/sort=newest/);
+  check(
+    (await page.locator('.row').count()) > 0,
+    'newest sort emptied the results',
+  );
+
+  // home remembers what was watched and shows a daily line
+  await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+  check(
+    (await page.locator('.continue .card').count()) > 0,
+    'continue watching is missing after a video was opened',
+  );
+  check(
+    (await page.locator('.feed-line').innerText()).length > 0,
+    'daily line is missing',
+  );
+
   // a cold visit straight to /search must query the API itself, not rely on the home feed
   const coldSearch = await browser.newContext({ viewport: { width: 1180, height: 820 } });
   const deep = await coldSearch.newPage();

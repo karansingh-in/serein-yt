@@ -71,7 +71,8 @@ async function request(params: Record<string, string>): Promise<TopicState> {
 export const fetchTopic = (topicId: string, refresh = false) =>
   request(refresh ? { topic: topicId, refresh: '1' } : { topic: topicId });
 
-export const fetchSearch = (text: string) => request({ q: text });
+export const fetchSearch = (text: string, sort: 'relevance' | 'newest' = 'relevance') =>
+  request(sort === 'newest' ? { q: text, sort } : { q: text });
 
 export const fetchChannel = (id: string) =>
   request({ channel: id }) as Promise<ChannelState>;

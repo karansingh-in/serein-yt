@@ -136,8 +136,8 @@ async function fetchTopic(topic: Topic, limits: Limits): Promise<Video[]> {
   return kept.slice(0, limits.perTopic);
 }
 
-/** A raw YouTube search: relevance order, no channel or topic rules. */
-async function searchVideos(text: string, limits: Limits): Promise<Video[]> {
+/** A raw YouTube search: no channel or topic rules. Relevance or newest. */
+async function searchVideos(text: string, limits: Limits, newest = false): Promise<Video[]> {
   const search = await call('search', {
     part: 'snippet',
     type: 'video',
@@ -146,7 +146,7 @@ async function searchVideos(text: string, limits: Limits): Promise<Video[]> {
     videoEmbeddable: 'true',
     safeSearch: 'none',
     relevanceLanguage: 'en',
-    order: 'relevance',
+    order: newest ? 'date' : 'relevance',
   });
 
   const candidates: { id: string; snippet: any }[] = (search.items ?? [])
@@ -312,7 +312,7 @@ export default async function handler(req: Req, res: ServerResponse) {
       );
     }
     try {
-      const items = await searchVideos(text, config.limits);
+      const items = await searchVideos(text, config.limits, param('sort') === 'newest');
       return send(res, 200, { items, fetchedAt: Date.now(), source: 'api' }, cache);
     } catch (error) {
       return fail(res, error);
