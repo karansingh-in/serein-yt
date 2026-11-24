@@ -194,6 +194,27 @@ await withBrowser(async (browser) => {
   );
   await cold.close();
 
+  // a repeated search comes from storage instead of spending 100 quota units again
+  await page.goto(BASE + '/search?q=newton', { waitUntil: 'networkidle' });
+  const firstRows = await page.locator('.row').count();
+  check(firstRows > 0, 'search before the reload found nothing');
+  const savedKeys = await page.evaluate(() =>
+    Object.keys(localStorage).filter((key) => key.startsWith('serein:v1:saved:search:')),
+  );
+  check(savedKeys.length > 0, 'the search answer was never written to storage');
+  offline = true;
+  await context.setOffline(true);
+  await page.goto(BASE + '/search?q=newton', { waitUntil: 'load' });
+  await page.waitForSelector('.row', { timeout: 5000 }).catch(() => {});
+  const repeatRows = await page.locator('.row').count();
+  const reachFailed = await page.getByText(/Couldn't reach search/).count();
+  check(
+    repeatRows === firstRows && reachFailed === 0,
+    `a repeated search went back to the API (${repeatRows} rows, failure note ${reachFailed})`,
+  );
+  await context.setOffline(false);
+  offline = false;
+
   // offline: the service worker must serve the shell and the saved feed, not an error page
   await page.goto(BASE + '/', { waitUntil: 'networkidle' });
   const controlled = await page.evaluate(async () => {

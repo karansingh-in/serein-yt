@@ -58,6 +58,38 @@ export function isStale(state: TopicState) {
   return Date.now() - state.fetchedAt > app.limits.cacheHours * 3_600_000;
 }
 
+const SAVED = 'saved:';
+const SAVED_MAX = 8;
+
+/** Search, channel and single-video answers, kept so a reload costs no quota. */
+export function readSaved<T extends TopicState = TopicState>(key: string): T | null {
+  const state = readCache(SAVED + key);
+  return state && !isStale(state) ? (state as T) : null;
+}
+
+export function writeSaved(key: string, state: TopicState) {
+  // Trim first, so a full store still has room for this answer; the cap stays at eight.
+  pruneSaved(SAVED_MAX - 1);
+  writeCache(SAVED + key, state);
+}
+
+function pruneSaved(keep: number) {
+  try {
+    const prefix = CACHE + SAVED;
+    const entries: { key: string; at: number }[] = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || !key.startsWith(prefix)) continue;
+      const raw = localStorage.getItem(key);
+      entries.push({ key, at: raw ? Number(JSON.parse(raw).fetchedAt) || 0 : 0 });
+    }
+    entries.sort((a, b) => b.at - a.at);
+    for (const entry of entries.slice(keep)) localStorage.removeItem(entry.key);
+  } catch {
+    // storage blocked or full; the in-memory copy still works for this visit
+  }
+}
+
 async function request(params: Record<string, string>): Promise<TopicState> {
   const query = new URLSearchParams(params).toString();
   const response = await fetch(`/api/videos?${query}`);

@@ -14,9 +14,11 @@ import {
   readCache,
   readHistory,
   readOpened,
+  readSaved,
   readTheme,
   setTheme,
   writeCache,
+  writeSaved,
 } from './api';
 import type { ChannelState, ThemeChoice } from './api';
 import * as views from './views';
@@ -175,6 +177,15 @@ async function renderHome(gen: number, activeId: string | null) {
 
 async function renderWatch(gen: number, id: string) {
   let video = findVideo(id);
+  let stored = false;
+  if (!video) {
+    const saved = readSaved('v:' + id);
+    if (saved?.items[0]) {
+      video = saved.items[0];
+      stored = true;
+      remember([video]);
+    }
+  }
   main.innerHTML = views.watch(video ?? null, false);
 
   if (!video) {
@@ -182,11 +193,17 @@ async function renderWatch(gen: number, id: string) {
     try {
       const result = await fetchVideo(id);
       video = result.items[0] ?? undefined;
-      if (video) remember([video]);
+      if (video) {
+        remember([video]);
+        writeSaved('v:' + id, result);
+      }
     } catch {
       video = undefined;
     }
     if (gen !== generation) return;
+  } else if (!stored) {
+    // Keep it for the next reload. The watch screen never shows the source note.
+    writeSaved('v:' + id, { items: [video], fetchedAt: Date.now(), source: 'api' });
   }
 
   main.innerHTML = views.watch(video ?? null, true);
@@ -213,41 +230,58 @@ function renderSearch(gen: number, url: URL) {
   };
 
   if (query && (!webSearch || webSearch.key !== key)) {
-    webSearch = { key, items: [], loading: true, failed: false };
-    fetchSearch(query, sort)
-      .then((result) => {
-        if (webSearch?.key === key) {
-          webSearch = { key, items: result.items, loading: false, failed: false };
-          remember(result.items);
-        }
-      })
-      .catch((error: unknown) => {
-        if (webSearch?.key === key) {
-          webSearch = {
-            key,
-            items: [],
-            loading: false,
-            failed:
-              error instanceof Error && error.message === 'quota_exceeded' ? 'quota' : 'other',
-          };
-        }
-      })
-      .then(() => {
-        if (gen === generation) paint();
-      });
+    const saved = readSaved(`search:${key}`);
+    if (saved) {
+      webSearch = { key, items: saved.items, loading: false, failed: false };
+      remember(saved.items);
+    } else {
+      webSearch = { key, items: [], loading: true, failed: false };
+      fetchSearch(query, sort)
+        .then((result) => {
+          if (webSearch?.key === key) {
+            webSearch = { key, items: result.items, loading: false, failed: false };
+            remember(result.items);
+            writeSaved(`search:${key}`, result);
+          }
+        })
+        .catch((error: unknown) => {
+          if (webSearch?.key === key) {
+            webSearch = {
+              key,
+              items: [],
+              loading: false,
+              failed:
+                error instanceof Error && error.message === 'quota_exceeded' ? 'quota' : 'other',
+            };
+          }
+        })
+        .then(() => {
+          if (gen === generation) paint();
+        });
+    }
   }
 
   paint();
 }
 
 async function renderChannel(gen: number, id: string) {
-  const cached = channels.get(id);
+  const key = `channel:${id}`;
+  let cached = channels.get(id);
+  if (!cached) {
+    const saved = readSaved<ChannelState>(key);
+    if (saved) {
+      cached = saved;
+      channels.set(id, saved);
+      remember(saved.items);
+    }
+  }
   main.innerHTML = views.channel(state, cached?.title ?? '', cached?.items ?? [], !cached);
   if (cached) return;
 
   try {
     const data = await fetchChannel(id);
     channels.set(id, data);
+    writeSaved(key, data);
     remember(data.items);
     if (gen !== generation) return;
     main.innerHTML = views.channel(state, data.title, data.items, false);

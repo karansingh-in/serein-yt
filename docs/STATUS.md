@@ -235,14 +235,32 @@ Owner approved amending SPEC §6, which used to say "No service worker".
 What it does not do: the player and thumbnails still need a connection, so offline shows
 the feed with empty image boxes.
 
+## Answers survive a reload (2026-11-24)
+
+Phase 4B. Search, a channel page and a single video were memory-only, so every reload
+spent quota again; one search costs 100 units.
+
+- `src/api.ts`: `readSaved`/`writeSaved` reuse the topic cache helpers under
+  `serein:v1:saved:` with the same TTL, and trim the store to the newest eight entries
+  before each write. No new dependency and no second storage layer.
+- `src/main.ts`: the search screen, the channel page and the watch screen seed from that
+  store before fetching, and write what comes back. A video already known from a feed or
+  a search is saved when it opens, so a reload costs nothing.
+- `scripts/smoke.mjs`: searches "newton", requires a saved entry, reloads offline and
+  requires the same rows with no failure note.
+- Checks: typecheck clean, tests 22/22, `lint:design` passes, `smoke` passes, `shots` 58
+  files. Build: JS 8.93 kB gzip, CSS 3.96 kB.
+
+Verified by hand beyond smoke: a channel page reloads offline with its six rows; a deep
+link to a video opened from search still shows its title offline with every topic cache
+deleted; ten planted entries trim back to eight on the next write.
+
 ## Next
-1. **Phase 4B, stop re-spending quota.** Persist search, channel and single-video
-   results across reloads. Not built yet.
-2. Phase 4C (resume at the saved position) is deferred: it needs `enablejsapi=1`, which
+1. Phase 4C (resume at the saved position) is deferred: it needs `enablejsapi=1`, which
    SPEC §7 bans.
-3. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
+2. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.
-4. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
+3. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
    it resets at midnight Pacific.
 
 ## Blockers
@@ -266,8 +284,10 @@ the feed with empty image boxes.
   The `vercel.json` CSP was verified by serving the built app with those exact headers.
 
 ## Session log
+- 2026-11-24 — Phase 4B: search, channel and single-video answers persist across reloads,
+  capped at eight entries; smoke proves a repeat search needs no network.
 - 2026-11-24 — Phase 4A: shell-only service worker, SPEC §6 amended, offline smoke case,
-  `ignoreVary` bug found and fixed. 4B next, 4C deferred.
+  `ignoreVary` bug found and fixed.
 - 2026-11-24 — Wrote Phase 4 in `docs/PLAN.md` (offline shell, quota persistence,
   resume deferred). Owner approved amending SPEC §6 for a shell-only service worker and
   deferred 4C, which would need `enablejsapi=1`. Nothing built yet.
