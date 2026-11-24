@@ -8,9 +8,11 @@ const check = (ok, message) => {
 await withBrowser(async (browser) => {
   const context = await browser.newContext({ viewport: { width: 1180, height: 820 } });
   const page = await context.newPage();
+  // Offline fetches fail on purpose; their console noise is not a regression.
+  let offline = false;
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   page.on('console', (message) => {
-    if (message.type() === 'error' && !message.text().includes('youtube')) {
+    if (!offline && message.type() === 'error' && !message.text().includes('youtube')) {
       problems.push(`console: ${message.text()}`);
     }
   });
@@ -191,6 +193,32 @@ await withBrowser(async (browser) => {
     `error state missing when the API fails: ${failure}`,
   );
   await cold.close();
+
+  // offline: the service worker must serve the shell and the saved feed, not an error page
+  await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+  const controlled = await page.evaluate(async () => {
+    if (!('serviceWorker' in navigator)) return false;
+    await navigator.serviceWorker.ready;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return Boolean(navigator.serviceWorker.controller);
+  });
+  check(controlled, 'service worker did not take control of the page');
+  offline = true;
+  await context.setOffline(true);
+  const shell = await page
+    .goto(BASE + '/', { waitUntil: 'load' })
+    .then(() => true)
+    .catch(() => false);
+  check(shell, 'offline navigation did not load the shell');
+  await page.waitForSelector('.card', { timeout: 5000 }).catch(() => {});
+  check(
+    (await page.locator('.card').count()) > 0,
+    'offline home lost the saved feed',
+  );
+  const offlineNote = await page.getByText(/You.re offline/).count();
+  check(offlineNote > 0, 'offline note missing from the saved feed');
+  await context.setOffline(false);
+  offline = false;
 
   await context.close();
 });

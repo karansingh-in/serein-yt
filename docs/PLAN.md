@@ -58,6 +58,8 @@ Remaining work in this phase:
 
 ## Phase 4 - offline and quota (proposed 2026-11-24)
 
+Built: **A** (2026-11-24). Next: **B**. Deferred: **C**.
+
 Owner asked what to improve besides the look. Three things, in value order. Each is its
 own stop-and-report step.
 

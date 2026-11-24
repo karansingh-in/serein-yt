@@ -208,16 +208,41 @@ browser context** and requires rows, so the cold path stays fixed.
 - Smoke covers a deep link that is not in the topic cache.
 - Motion polish: tabs cross-fade their pill, cards lift 2px on hover. No shadows or gradients.
 
+## App shell offline (2026-11-24)
+
+Owner approved amending SPEC §6, which used to say "No service worker".
+
+- `public/sw.js` (3.0 kB, no dependency, no build step): precaches the shell by reading
+  the hashed asset names out of `index.html`, then sweeps the built CSS for the font
+  files. Navigations are network-first with the cached shell as the fallback; `/assets/`
+  is cache-first because the names are hashed; everything else is revalidated and only
+  falls back to the cache when the fetch fails. `/api/` is never intercepted, so Refresh
+  always reaches the network.
+- `src/main.ts` registers it on `load`, production only. `tsconfig.json` gained
+  `vite/client` for `import.meta.env.PROD`.
+- `vercel.json`: `/sw.js` gets `Cache-Control: no-cache` and `Service-Worker-Allowed: /`.
+- `scripts/smoke.mjs`: after the normal run it waits for the worker to take control, goes
+  offline and requires the home page to render saved cards with "You're offline. Showing
+  what was saved." Console noise from the deliberate failed fetches is ignored.
+- One real bug found while verifying: a `Request`-based `caches.match()` missed every
+  hashed asset, because the host sends a `Vary` header the document's request never
+  matches. Both matches now pass `ignoreVary: true`. Without it the offline page loaded
+  as bare HTML with no styles and no app.
+- Checks: typecheck clean, tests 22/22, `lint:design` passes, `smoke` passes (including
+  the offline case), `shots` 58 files. Build: JS 8.65 kB gzip, CSS 3.96 kB, Latin Geist
+  29.4 kB. Offline home screenshot: `docs/screens/offline-home.png`.
+
+What it does not do: the player and thumbnails still need a connection, so offline shows
+the feed with empty image boxes.
+
 ## Next
-1. **Phase 4A, app shell offline.** Owner approved amending SPEC §6 to allow a
-   shell-only service worker. Not built yet. Plan in `docs/PLAN.md`.
-2. **Phase 4B, stop re-spending quota.** Persist search, channel and single-video
+1. **Phase 4B, stop re-spending quota.** Persist search, channel and single-video
    results across reloads. Not built yet.
-3. Phase 4C (resume at the saved position) is deferred: it needs `enablejsapi=1`, which
+2. Phase 4C (resume at the saved position) is deferred: it needs `enablejsapi=1`, which
    SPEC §7 bans.
-4. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
+3. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.
-5. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
+4. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
    it resets at midnight Pacific.
 
 ## Blockers
@@ -231,12 +256,18 @@ browser context** and requires rows, so the cold path stays fixed.
   no live thumbnail has rendered. The 4:3 → 16:9 crop is therefore still unverified, and
   the live screenshots in `docs/screens/live/` show empty image boxes for that reason.
 - Standalone (Home Screen) behaviour: storage, fullscreen video, status bar, safe areas.
+  This now includes the service worker: offline opening was only proven in Chromium, not
+  in a Home Screen app on the iPad.
+- The deployed `/sw.js`: the `Cache-Control` and `Service-Worker-Allowed` headers, and
+  that the SPA rewrite leaves `/sw.js` alone, are only checked locally.
 - Real WebKit/Safari rendering. Screenshots and smoke tests run in system Edge.
 - Accessibility beyond contrast: no axe pass was run (see `docs/DECISIONS.md`).
 - The Vercel function has not been deployed; only the local Vite middleware was exercised.
   The `vercel.json` CSP was verified by serving the built app with those exact headers.
 
 ## Session log
+- 2026-11-24 — Phase 4A: shell-only service worker, SPEC §6 amended, offline smoke case,
+  `ignoreVary` bug found and fixed. 4B next, 4C deferred.
 - 2026-11-24 — Wrote Phase 4 in `docs/PLAN.md` (offline shell, quota persistence,
   resume deferred). Owner approved amending SPEC §6 for a shell-only service worker and
   deferred 4C, which would need `enablejsapi=1`. Nothing built yet.
