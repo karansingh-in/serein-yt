@@ -55,3 +55,60 @@ Remaining work in this phase:
 - [x] `docs/SETUP.md` — key restriction, deploy, NextDNS, Screen Time, Add to Home Screen
 - [x] `docs/STATUS.md`, `docs/DECISIONS.md` updated
 - [x] Verify the built app under the real CSP
+
+## Phase 4 - offline and quota (proposed 2026-11-24)
+
+Owner asked what to improve besides the look. Three things, in value order. Each is its
+own stop-and-report step.
+
+**SPEC conflict, needs an owner decision.** SPEC 6 says "No service worker." and
+DECISIONS line 10 gives the reason: stale-cache bugs, and the app needs a connection
+anyway. Phase A below needs that one sentence amended. A service worker cannot make the
+*player* work offline - the player lives on `youtube-nocookie.com` - it only makes the
+app open and show what was saved.
+
+### A. App shell offline (~25 lines, no dependency)
+
+| Piece | Change |
+|---|---|
+| `public/sw.js` (new) | Cache-first for same-origin assets, network-first for navigations with the cached shell as fallback, never touches `/api/`. No build step and no file list: whatever the first visit loaded is what offline gets. One version constant, used only to drop old caches. |
+| `src/main.ts` | Register on `load`, production only, `navigator.serviceWorker` guarded. Six lines. |
+| `vercel.json` | `/sw.js` gets `Cache-Control: no-cache`, so an update is picked up on the next load. |
+| `scripts/smoke.mjs` | Load once, go offline, open `/search`: expect the shell and the offline line, not the browser's error page. |
+| `docs/SPEC.md`, `docs/DECISIONS.md` | The amended sentence and the new reason. |
+
+Skipped: caching thumbnails or API JSON in the worker. Thumbnails are cross-origin
+opaque responses that inflate the storage quota; API JSON is already handled by the
+client, and caching it in the worker would make the Refresh button a lie.
+
+### B. Stop paying 100 quota units for the same search (~25 lines)
+
+Today only topics survive a reload. Search, a channel page and a single video are
+memory-only, so a reload spends quota again.
+
+| Piece | Change |
+|---|---|
+| `src/api.ts` | `readSaved`/`writeSaved` over the existing cache helpers, one prefix, pruned to the newest 8 entries at boot so a full `localStorage` cannot starve the topic cache. |
+| `src/main.ts` | Seed search, channel and single-video state from it before fetching; write it on success. Reuses `isStale`, `readCache`, `writeCache`. |
+| `scripts/smoke.mjs` | Search once, reload, search the same text again with the network blocked: rows must still render. |
+
+### C. Resume where the player stopped - needs a second decision
+
+`start=` is enough to resume, but nothing tells the app where you were without
+`enablejsapi=1` and reading `postMessage`, and SPEC 7 says "No iframe API and no scripts
+from YouTube". So this is a SPEC amendment too, not a bug fix: about 40 lines, one
+`message` listener, the position stored on the existing history entry.
+
+Value: real for a 50-minute one-shot. Risk: the embed then needs an `origin` parameter,
+and the `infoDelivery` message shape is undocumented, so it can change without notice.
+
+**Cut from this plan:** `/api/health` (the error messages already say why), thumbnail
+`srcset` (SPEC 7 pins one thumbnail size), keyboard shortcuts (not in the SPEC), a
+Vercel cron warming topics (one more moving part for a quota of 10,000 units a day),
+visual-regression CI (there is no CI).
+
+### Checks per phase
+
+`npm run typecheck`, `npm test`, `npm run lint:design`, `npm run smoke`, `npm run shots`,
+then `docs/STATUS.md`. Offline behaviour is Chromium-only here; the iOS Home Screen
+stays unverified.

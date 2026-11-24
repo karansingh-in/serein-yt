@@ -209,9 +209,15 @@ browser context** and requires rows, so the cold path stays fixed.
 - Motion polish: tabs cross-fade their pill, cards lift 2px on hover. No shadows or gradients.
 
 ## Next
-1. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
+1. **Phase 4A, app shell offline.** Owner approved amending SPEC §6 to allow a
+   shell-only service worker. Not built yet. Plan in `docs/PLAN.md`.
+2. **Phase 4B, stop re-spending quota.** Persist search, channel and single-video
+   results across reloads. Not built yet.
+3. Phase 4C (resume at the saved position) is deferred: it needs `enablejsapi=1`, which
+   SPEC §7 bans.
+4. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
    reports what actually happens.
-2. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
+5. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
    it resets at midnight Pacific.
 
 ## Blockers
@@ -231,6 +237,9 @@ browser context** and requires rows, so the cold path stays fixed.
   The `vercel.json` CSP was verified by serving the built app with those exact headers.
 
 ## Session log
+- 2026-11-24 — Wrote Phase 4 in `docs/PLAN.md` (offline shell, quota persistence,
+  resume deferred). Owner approved amending SPEC §6 for a shell-only service worker and
+  deferred 4C, which would need `enablejsapi=1`. Nothing built yet.
 - 2026-11-20 — Built phases 1–3 end to end, wrote `docs/PLAN.md`, `docs/SETUP.md`,
   fixed the settings column alignment and the shots script's lazy-image wait, verified the
   build under the real CSP, initialised the repo.
