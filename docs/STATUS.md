@@ -255,11 +255,22 @@ Verified by hand beyond smoke: a channel page reloads offline with its six rows;
 link to a video opened from search still shows its title offline with every topic cache
 deleted; ten planted entries trim back to eight on the next write.
 
+## Deployed (2026-11-24)
+
+Pushed `4679746`, `61bfaaa`, `7af911c`. Checked from this machine, not the iPad:
+
+- `https://serein-yt.vercel.app/` serves `assets/index-C9vmnWuR.js`, and that bundle
+  contains the saved store and the `/sw.js` registration, so both phases are live.
+- `/sw.js` answers 200 as `application/javascript` with `Cache-Control: no-cache` and
+  `Service-Worker-Allowed: /`. The SPA rewrite does not swallow it.
+- The Vercel bundle hash differs from the local build (Rollup platform binaries); the
+  behaviour was checked by content, not by hash.
+
 ## Next
-1. Phase 4C (resume at the saved position) is deferred: it needs `enablejsapi=1`, which
+1. Owner opens `https://serein-yt.vercel.app` on the iPad and reports what happens,
+   including the exact Safari message if it does not open.
+2. Phase 4C (resume at the saved position) is deferred: it needs `enablejsapi=1`, which
    SPEC §7 bans.
-2. Owner opens `https://serein-yt.vercel.app` on the iPad, adds it to the Home Screen and
-   reports what actually happens.
 3. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
    it resets at midnight Pacific.
 
@@ -276,14 +287,12 @@ deleted; ten planted entries trim back to eight on the next write.
 - Standalone (Home Screen) behaviour: storage, fullscreen video, status bar, safe areas.
   This now includes the service worker: offline opening was only proven in Chromium, not
   in a Home Screen app on the iPad.
-- The deployed `/sw.js`: the `Cache-Control` and `Service-Worker-Allowed` headers, and
-  that the SPA rewrite leaves `/sw.js` alone, are only checked locally.
 - Real WebKit/Safari rendering. Screenshots and smoke tests run in system Edge.
 - Accessibility beyond contrast: no axe pass was run (see `docs/DECISIONS.md`).
-- The Vercel function has not been deployed; only the local Vite middleware was exercised.
-  The `vercel.json` CSP was verified by serving the built app with those exact headers.
 
 ## Session log
+- 2026-11-24 — Pushed phases 4A and 4B. Verified from here: the live bundle carries both
+  changes and `/sw.js` is served correctly by Vercel.
 - 2026-11-24 — Phase 4B: search, channel and single-video answers persist across reloads,
   capped at eight entries; smoke proves a repeat search needs no network.
 - 2026-11-24 — Phase 4A: shell-only service worker, SPEC §6 amended, offline smoke case,
