@@ -767,6 +767,7 @@ html.is-locked {
 .watch.is-max .back,
 .watch.is-max .watch__title,
 .watch.is-max .watch__desc,
+.watch.is-max .watch__resume,
 .watch.is-max .link {
   display: none;
 }

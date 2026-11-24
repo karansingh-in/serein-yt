@@ -37,6 +37,47 @@ await withBrowser(async (browser) => {
   const heading = await page.locator('.watch__title').innerText();
   check(heading === title, 'watch heading does not match the card title');
 
+  // the embed is told to report progress, and a saved position is passed back to it
+  const embedSrc = await page.locator('.stage iframe').getAttribute('src');
+  check(
+    Boolean(embedSrc?.includes('enablejsapi=1') && embedSrc.includes('origin=')),
+    `embed is not asked to report progress: ${embedSrc}`,
+  );
+  const watchedId = page.url().split('/watch/')[1];
+  await page.evaluate((id) => {
+    const entries = JSON.parse(localStorage.getItem('serein:history') ?? '[]');
+    const entry = entries.find((item) => item.video.id === id);
+    entry.position = 600;
+    entry.duration = 3600;
+    localStorage.setItem('serein:history', JSON.stringify(entries));
+  }, watchedId);
+  await page.reload({ waitUntil: 'networkidle' });
+  const resumeSrc = await page.locator('.stage iframe').getAttribute('src');
+  check(resumeSrc?.includes('start=600'), `saved position not passed to the embed: ${resumeSrc}`);
+  check(
+    (await page.locator('.watch__resume').innerText()).includes('10:00'),
+    'resume note is missing or wrong',
+  );
+  // the real player is unreachable here, so hand the page a progress report by hand
+  await page.evaluate(() => {
+    const frame = document.querySelector('.stage iframe');
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: JSON.stringify({
+          event: 'infoDelivery',
+          info: { currentTime: 720.5, duration: 3600 },
+        }),
+        origin: 'https://www.youtube-nocookie.com',
+        source: frame.contentWindow,
+      }),
+    );
+  });
+  const savedPosition = await page.evaluate(() => {
+    const entries = JSON.parse(localStorage.getItem('serein:history') ?? '[]');
+    return entries[0]?.position;
+  });
+  check(savedPosition === 720, `the player's position was not saved (${savedPosition})`);
+
   // maximize fills the window without covering the player, Escape restores the page
   const before = await page.locator('.stage').boundingBox();
   await page.getByRole('button', { name: 'Maximize' }).click();

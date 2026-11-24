@@ -9,6 +9,7 @@ Record every dependency, deviation from SPEC.md, and adjusted design token, with
 - Search is `search.list` (100 units per call), so every topic result is cached and refreshes are rate limited. Reason: free quota.
 - A service worker caches the shell only, never `/api/`. Reason: without it the app does not open at all without a connection, so a saved feed is unreachable; caching API answers would make Refresh look broken, and the player is cross-origin so it cannot be cached anyway. (Owner approved the SPEC change 2026-11-24; the earlier decision was no worker at all.)
 - Search, channel and single-video answers persist under the same `localStorage` prefix as the topics, capped at eight entries. Reason: a search costs 100 quota units, so paying it again for the same words after a reload is waste; the cap keeps the store from starving the topic cache.
+- Playback position is remembered by reading the embed's own `postMessage` progress reports and passing the saved second back as `start=`. Reason: the IFrame API is the only way to know where playback stopped, and it is the player talking to the page, not a script loaded from YouTube. Resume is skipped in the first 20 seconds and the last 30, so a finished video never reopens half-played. (Owner approved the SPEC change 2026-11-24.)
 - Ads cannot be removed with the official player. Reason: YouTube policy; do not attempt workarounds.
 - App name is configurable and must not contain "YouTube" or "YT". Reason: YouTube API Branding Guidelines.
 

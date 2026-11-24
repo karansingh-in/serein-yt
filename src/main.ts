@@ -3,12 +3,14 @@ import type { Video } from '../api/filters';
 import {
   app,
   canRefresh,
+  clearProgress,
   fetchChannel,
   fetchSearch,
   fetchTopic,
   fetchVideo,
   isStale,
   markOpened,
+  markProgress,
   markRefresh,
   markWatched,
   readCache,
@@ -20,6 +22,7 @@ import {
   writeCache,
   writeSaved,
 } from './api';
+import { isFinished, readProgress, resumeAt } from './progress';
 import type { ChannelState, ThemeChoice } from './api';
 import * as views from './views';
 
@@ -186,7 +189,16 @@ async function renderWatch(gen: number, id: string) {
       remember([video]);
     }
   }
-  main.innerHTML = views.watch(video ?? null, false);
+  const paint = (ready: boolean) => {
+    main.innerHTML = views.watch(
+      video ?? null,
+      ready,
+      video ? resumePoint(video.id) : undefined,
+    );
+    if (video) attachPlayer(video.id);
+  };
+
+  paint(false);
 
   if (!video) {
     // Deep link or reload: ask for this one video (1 unit) instead of every topic.
@@ -206,7 +218,7 @@ async function renderWatch(gen: number, id: string) {
     writeSaved('v:' + id, { items: [video], fetchedAt: Date.now(), source: 'api' });
   }
 
-  main.innerHTML = views.watch(video ?? null, true);
+  paint(true);
   if (video) {
     markOpened(id);
     state.opened.add(id);
@@ -307,8 +319,50 @@ function setMaximized(on: boolean) {
   }
 }
 
+const YT_ORIGIN = 'https://www.youtube-nocookie.com';
+let player: { id: string; frame: HTMLIFrameElement; savedAt: number } | null = null;
+
+/** Asks the embed to report its progress. It answers with infoDelivery messages. */
+function attachPlayer(id: string) {
+  const frame = document.querySelector<HTMLIFrameElement>('.stage iframe');
+  player = frame ? { id, frame, savedAt: 0 } : null;
+  if (!frame) return;
+  const listen = () => {
+    frame.contentWindow?.postMessage(
+      JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }),
+      YT_ORIGIN,
+    );
+  };
+  frame.addEventListener('load', listen, { once: true });
+  listen();
+}
+
+function resumePoint(id: string) {
+  const entry = readHistory().find((item) => item.video.id === id);
+  return entry?.position !== undefined && entry.duration !== undefined
+    ? resumeAt(entry.position, entry.duration)
+    : undefined;
+}
+
+window.addEventListener('message', (event) => {
+  if (!player || event.origin !== YT_ORIGIN || event.source !== player.frame.contentWindow) return;
+  let data: unknown;
+  try {
+    data = JSON.parse(String(event.data));
+  } catch {
+    return;
+  }
+  const progress = readProgress(data);
+  // The player reports several times a second; storage does not need that.
+  if (!progress || Date.now() - player.savedAt < 5000) return;
+  player.savedAt = Date.now();
+  if (isFinished(progress)) clearProgress(player.id);
+  else markProgress(player.id, progress.position, progress.duration);
+});
+
 function render() {
   const gen = ++generation;
+  player = null;
   document.documentElement.classList.remove('is-locked');
   updateCountdown();
   const url = new URL(location.href);
@@ -451,8 +505,12 @@ form.addEventListener('submit', (event) => {
 });
 
 window.addEventListener('popstate', render);
-window.addEventListener('online', render);
-window.addEventListener('offline', render);
+// Repainting the watch screen would tear the player down mid-video, so leave it alone.
+const rerenderUnlessWatching = () => {
+  if (!location.pathname.startsWith('/watch/')) render();
+};
+window.addEventListener('online', rerenderUnlessWatching);
+window.addEventListener('offline', rerenderUnlessWatching);
 
 const onScroll = () => bar.classList.toggle('is-stuck', window.scrollY > 0);
 window.addEventListener('scroll', onScroll, { passive: true });

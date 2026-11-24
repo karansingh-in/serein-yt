@@ -30,7 +30,13 @@ export type ChannelState = TopicState & { title: string };
 
 export type CommunityLink = { label: string; href: string; note: string };
 
-export type HistoryEntry = { video: Video; watchedAt: number };
+export type HistoryEntry = {
+  video: Video;
+  watchedAt: number;
+  /** Seconds in, when the player reported a position. */
+  position?: number;
+  duration?: number;
+};
 
 const CACHE = 'serein:v1:';
 const OPENED = 'serein:opened';
@@ -139,11 +145,51 @@ export function readHistory(): HistoryEntry[] {
 
 export function markWatched(video: Video) {
   try {
-    const rest = readHistory().filter((entry) => entry.video.id !== video.id);
+    const entries = readHistory();
+    // Keep where the last session stopped; this call only moves the entry to the top.
+    const previous = entries.find((entry) => entry.video.id === video.id);
+    const rest = entries.filter((entry) => entry.video.id !== video.id);
     localStorage.setItem(
       HISTORY,
-      JSON.stringify([{ video, watchedAt: Date.now() }, ...rest].slice(0, 60)),
+      JSON.stringify(
+        [
+          {
+            video,
+            watchedAt: Date.now(),
+            position: previous?.position,
+            duration: previous?.duration,
+          },
+          ...rest,
+        ].slice(0, 60),
+      ),
     );
+  } catch {
+    // storage full or blocked
+  }
+}
+
+/** Remember how far playback got, so the next open can resume there. */
+export function markProgress(id: string, position: number, duration: number) {
+  try {
+    const entries = readHistory();
+    const entry = entries.find((item) => item.video.id === id);
+    if (!entry) return;
+    entry.position = Math.floor(position);
+    entry.duration = Math.floor(duration);
+    localStorage.setItem(HISTORY, JSON.stringify(entries));
+  } catch {
+    // storage full or blocked
+  }
+}
+
+export function clearProgress(id: string) {
+  try {
+    const entries = readHistory();
+    const entry = entries.find((item) => item.video.id === id);
+    if (!entry || entry.position === undefined) return;
+    delete entry.position;
+    delete entry.duration;
+    localStorage.setItem(HISTORY, JSON.stringify(entries));
   } catch {
     // storage full or blocked
   }

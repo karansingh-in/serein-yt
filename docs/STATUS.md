@@ -266,12 +266,35 @@ Pushed `4679746`, `61bfaaa`, `7af911c`. Checked from this machine, not the iPad:
 - The Vercel bundle hash differs from the local build (Rollup platform binaries); the
   behaviour was checked by content, not by hash.
 
+## Resume where you stopped (2026-11-24)
+
+Phase 4C, with the SPEC §7 amendment the owner approved: the embed now carries
+`enablejsapi=1&origin=…` and the app reads the player's own `postMessage` progress
+reports. No script is loaded from YouTube; the player's UI and its ads are untouched.
+
+- `src/progress.ts` (new, pure): `resumeAt` (skips the first 20 s and the last 30 s),
+  `readProgress` (guards the payload), `isFinished`. Covered by `tests/progress.test.ts`.
+- `src/api.ts`: history entries gained `position`/`duration`; `markProgress` and
+  `clearProgress` update the existing entry, and `markWatched` now keeps the saved
+  position when it moves an entry to the top. Without that, opening a video wiped it.
+- `src/main.ts`: one `message` listener, checked for origin and source and throttled to
+  one save every 5 s; `resumePoint` reads the entry; `attachPlayer` sends the
+  `listening` handshake.
+- `src/views.ts`: `start=` plus a "Resuming at 34:12." line, hidden in the maximized
+  stage.
+- `online`/`offline` no longer repaint the watch screen, which used to tear the player
+  down mid-video and lose the position.
+- `scripts/smoke.mjs`: checks `enablejsapi` and `origin` on the embed, plants a position,
+  reloads and requires `start=600` and the note, then feeds the page a synthetic
+  `infoDelivery` message and requires it to be stored. The real handshake cannot be
+  tested here: this machine blocks `youtube-nocookie.com`.
+- Checks: typecheck clean, tests 29/29, `lint:design` passes, `smoke` passes, `shots` 58
+  files. Build: JS 9.66 kB gzip, CSS 3.96 kB.
+
 ## Next
-1. Owner opens `https://serein-yt.vercel.app` on the iPad and reports what happens,
-   including the exact Safari message if it does not open.
-2. Phase 4C (resume at the saved position) is deferred: it needs `enablejsapi=1`, which
-   SPEC §7 bans.
-3. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
+1. Owner opens a lecture on the iPad, watches a few minutes, leaves, and reopens it:
+   it should continue at that point with "Resuming at …" above the title.
+2. If a topic shows "Couldn't refresh" during the day, the daily search quota is spent;
    it resets at midnight Pacific.
 
 ## Blockers
@@ -288,9 +311,14 @@ Pushed `4679746`, `61bfaaa`, `7af911c`. Checked from this machine, not the iPad:
   This now includes the service worker: offline opening was only proven in Chromium, not
   in a Home Screen app on the iPad.
 - Real WebKit/Safari rendering. Screenshots and smoke tests run in system Edge.
+- The player handshake itself: `listening` → `infoDelivery` → `start=`. The storage side
+  is proven with a synthetic message, but this machine blocks `youtube-nocookie.com`, so
+  the real player has never answered here.
 - Accessibility beyond contrast: no axe pass was run (see `docs/DECISIONS.md`).
 
 ## Session log
+- 2026-11-24 — Phase 4C: resume at the saved position via the embed's own progress
+  reports, SPEC §7 amended, 6 new unit tests, synthetic-message smoke case.
 - 2026-11-24 — Pushed phases 4A and 4B. Verified from here: the live bundle carries both
   changes and `/sw.js` is served correctly by Vercel.
 - 2026-11-24 — Phase 4B: search, channel and single-video answers persist across reloads,

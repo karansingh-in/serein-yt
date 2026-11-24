@@ -23,6 +23,16 @@ export function minutes(seconds: number) {
   return rest === 0 ? `${hours} hr` : `${hours} hr ${rest} min`;
 }
 
+/** Clock time for a position inside a video: 4:07 or 1:04:07. */
+export function clock(seconds: number) {
+  const total = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = total % 60;
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return hours ? `${hours}:${pad(minutes)}:${pad(rest)}` : `${minutes}:${pad(rest)}`;
+}
+
 export function ago(iso: string) {
   const then = Date.parse(iso);
   if (Number.isNaN(then)) return '';
@@ -223,7 +233,7 @@ export function home(state: State, activeId: string | null, history: HistoryEntr
     </div>`;
 }
 
-export function watch(video: Video | null, notFound: boolean) {
+export function watch(video: Video | null, notFound: boolean, startAt?: number) {
   if (!video) {
     return `<div class="view page">
         <a class="back" href="/" data-link>Back</a>
@@ -240,7 +250,8 @@ export function watch(video: Video | null, notFound: boolean) {
 
   const embed =
     `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.id)}` +
-    '?rel=0&iv_load_policy=3&playsinline=1';
+    `?rel=0&iv_load_policy=3&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(location.origin)}` +
+    (startAt ? `&start=${startAt}` : '');
   const long = video.description.length > 220;
   const channel = video.channelId
     ? `<a class="watch__channel" href="/channel/${encodeURIComponent(video.channelId)}" data-link>${esc(video.channel)}</a>`
@@ -257,6 +268,11 @@ export function watch(video: Video | null, notFound: boolean) {
           allow="autoplay; fullscreen; picture-in-picture"
           allowfullscreen></iframe>
       </div>
+      ${
+        startAt
+          ? `<p class="note watch__resume" role="status">Resuming at ${clock(startAt)}.</p>`
+          : ''
+      }
       <h1 class="watch__title">${esc(video.title)}</h1>
       <div class="watch__actions">
         <p class="watch__meta">${channel} <span aria-hidden="true">·</span> ${esc(rest)}</p>
